@@ -1,0 +1,18 @@
+# Ignorar pasta de build
+build/
+
+# Ignorar arquivos temporários do sistema
+*.swp
+*.swo
+
+# Ignorar arquivos de backup
+*~
+
+# Ignorar arquivos de dependências
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Ignorar executáveis
+/grafos

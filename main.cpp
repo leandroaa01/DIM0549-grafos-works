@@ -1,4 +1,4 @@
-#include "grafos.hpp"
+#include "include/grafos_adjacency.hpp"
 #include <cstdlib>
 
 int main(int argc, char const *argv[])
