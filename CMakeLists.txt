@@ -6,4 +6,4 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories(include)
 
-add_executable(grafos main.cpp src/grafos_adjacency.cpp)
+add_executable(grafos main.cpp src/grafos_adjacency.cpp src/grafos_list.cpp )
