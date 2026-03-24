@@ -20,6 +20,8 @@ class Graph {
   void remove( value origin, value destiny );
 
   void print() const;
+
+  void dfs(Graph &g, value vertex);
 };
 
 #endif // GRAFOS_HPP

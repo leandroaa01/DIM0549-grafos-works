@@ -14,6 +14,9 @@ int main(int argc, char const *argv[])
      g.add(5, 6);
      g.add(6, 4);
      g.print();
+
+     std::cout << "\n";
+     g.dfs(g, 4);
     std::cout << "\n\n";
      GraphList gl(5);
     gl.add(1, 2);
@@ -21,7 +24,8 @@ int main(int argc, char const *argv[])
     gl.add(2, 3);
     gl.add(3, 4);
     gl.add(3, 5);
-     gl.print();
+    gl.print();
+
      
     return 0;
 }
