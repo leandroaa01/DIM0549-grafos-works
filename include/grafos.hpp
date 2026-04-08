@@ -36,6 +36,7 @@ private:
    int m_vertices; //> Número de vértices no grafo
    int m_edges{0}; //> Número de arestas no grafo
    bool use_list{false}; //> Flag para indicar se o grafo está usando lista de adjacências ou matriz de adjacências
+   bool is_targeted{false}; //> Flag para indicar se o grafo é direcionado ou não
    std::unordered_map<Type, int> m_vertex_index; //> Mapa para associar vértices a índices na matriz de adjacências
 
    int get_vertex_index(Type vertex, bool create = true); //> Método privado para obter ou criar o índice de um vértice
@@ -49,6 +50,16 @@ public:
    Graph(int vertices) : m_vertices(vertices) {
       m_matrix.resize(vertices, std::vector<int>(vertices, 0)); //> Inicializa a matriz de adjacências com zeros
    }
+   /**
+    * @brief  Define se o grafo é direcionado ou não. Se o grafo for direcionado, as arestas serão adicionadas
+    * apenas na direção de origem para destino. Se o grafo não for direcionado, as arestas serão adicionadas 
+    * em ambas as direções (origem para destino e destino para origem).
+    * @param targeted  representa se o grafo é direcionado (true) ou não direcionado (false).
+    */
+   void set_targeted(bool targeted) {
+        is_targeted = targeted; //> Define se o grafo é direcionado ou não
+    }
+
     /** * @brief Converte a representação do grafo de matriz para lista de adjacências.
      * O método percorre a matriz de adjacências e para cada vértice, adiciona os vértices adjacentes à lista de adjacências correspondente. 
      */
@@ -81,6 +92,8 @@ public:
      * O método verifica se o grafo está usando lista ou matriz de adjacências e imprime a estrutura correspondente de forma legível.
      */
     void print() const;
+
+    int degree(Type vertex);
 };
 
 #include "grafos.tpp"
