@@ -10,8 +10,11 @@
  */
 #pragma  once
 
+#include <algorithm>
 #include <vector>
 #include <list>
+#include <unordered_map>
+#include <iostream>
 
 template <typename T>
 using Matriz = std::vector<std::vector<T>>; //> Define um alises para uma matriz de adjacências de tipo T
@@ -28,10 +31,14 @@ using Lista = std::vector<std::list<T>>; //> Define um alises para uma lista de 
 template <typename Type>
 class Graph{
 private:
-   Matriz<Type> m_matrix; //> Matriz de adjacências para representar o grafo
+   std::vector<std::vector<int>> m_matrix; //> Matriz de adjacências com 0/1 para representar o grafo
    Lista<Type> m_list; //> Lista de adjacências para representar o grafo
    int m_vertices; //> Número de vértices no grafo
+   int m_edges{0}; //> Número de arestas no grafo
    bool use_list{false}; //> Flag para indicar se o grafo está usando lista de adjacências ou matriz de adjacências
+   std::unordered_map<Type, int> m_vertex_index; //> Mapa para associar vértices a índices na matriz de adjacências
+
+   int get_vertex_index(Type vertex, bool create = true); //> Método privado para obter ou criar o índice de um vértice
 public:
 
     /**
@@ -40,7 +47,7 @@ public:
      * @param vertices  representa o número de vértices do grafo.
      */
    Graph(int vertices) : m_vertices(vertices) {
-      m_matrix.resize(vertices, std::vector<Type>(vertices, Type{})); //> Inicializa a matriz de adjacências com valores padrão de Type
+      m_matrix.resize(vertices, std::vector<int>(vertices, 0)); //> Inicializa a matriz de adjacências com zeros
    }
     /** * @brief Converte a representação do grafo de matriz para lista de adjacências.
      * O método percorre a matriz de adjacências e para cada vértice, adiciona os vértices adjacentes à lista de adjacências correspondente. 
@@ -75,3 +82,5 @@ public:
      */
     void print() const;
 };
+
+#include "grafos.tpp"
