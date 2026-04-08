@@ -101,6 +101,16 @@ public:
      * @return int  representa o grau do vértice fornecido, ou -1 se o vértice não existir no grafo.
      */
     int degree(Type vertex);
+
+    /**
+     * @brief Verifica se dois vértices são adjacentes no grafo. 
+     * O método verifica a estrutura de adjacências (seja lista ou matriz) para determinar se existe uma aresta entre os dois vértices fornecidos.
+     * 
+     * @param vertex1 representa o primeiro vértice a ser verificado.
+     * @param vertex2 representa o segundo vértice a ser verificado.
+     * @return true   se os vértices forem adjacentes, ou false caso contrário.
+     */
+    bool is_adjacent(Type vertex1, Type vertex2); 
 };
 
 #include "grafos.tpp"
