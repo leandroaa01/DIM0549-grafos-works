@@ -60,7 +60,6 @@ void Graph<T>::to_matrix() {
             }
         }
     }
-
     use_list = false; //> Define a flag para indicar que o grafo agora está usando matriz de adjacências
 }
 
@@ -77,8 +76,16 @@ void Graph<T>::add(T origin, T destiny) {
     if (origin_index < 0  or destiny_index < 0) {
         return;
     }
+    bool edge_exists = false;
+    if (use_list) {
+        edge_exists = std::find(m_list[origin_index].begin(), m_list[origin_index].end(), destiny) != m_list[origin_index].end();
+    } else {
+        if (m_matrix[origin_index][destiny_index] == 1) edge_exists = true;
+    }
 
-    m_edges++; //> Incrementa o contador de arestas do grafo
+    if (not edge_exists) {
+        m_edges++; //> Incrementa o contador de arestas do grafo apenas se a aresta não existir
+    }
 
      if (use_list) {
         m_list[origin_index].push_back(destiny); //> Adiciona o vértice de destino à lista de adjacências do vértice de origem
@@ -133,10 +140,8 @@ void Graph<T>::print() const {
 
             std::cout << '\n';
         }
-
         return;
     }
-
     std::cout << "   ";
     for (int i = 0; i < m_vertices; ++i) {
         auto valor = std::find_if(m_vertex_index.begin(), m_vertex_index.end(), [i](const auto& pair) {
@@ -150,7 +155,6 @@ void Graph<T>::print() const {
         }
     }
     std::cout << "\n";
-
     for (int i = 0; i < m_vertices; ++i) {
         auto valor = std::find_if(m_vertex_index.begin(), m_vertex_index.end(), [i](const auto& pair) {
             return pair.second == i;
@@ -165,7 +169,6 @@ void Graph<T>::print() const {
         for (int j = 0; j < m_vertices; ++j) {
             std::cout << m_matrix[i][j] << " ";
         }
-
         std::cout << "| \n";
     }
 }
@@ -193,7 +196,7 @@ bool Graph<T>::is_adjacent(T vertex1, T vertex2) {
         std::cerr << "Error: vertex not found." << std::endl;
         return false;  
     }
-    
+
     return m_matrix[vertex1_index][vertex2_index] != 0; //> Verifica se há uma aresta entre os dois vértices na matriz de adjacências
     
 }
