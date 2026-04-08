@@ -111,6 +111,9 @@ public:
      * @return true   se os vértices forem adjacentes, ou false caso contrário.
      */
     bool is_adjacent(Type vertex1, Type vertex2); 
+
+    int total_edges() const { return m_edges; } //> Retorna o número total de arestas no grafo
+    int total_vertices() const { return m_vertices; } //> Retorna o número total de vértices no grafo
 };
 
 #include "grafos.tpp"
