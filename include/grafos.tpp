@@ -182,3 +182,18 @@ int Graph<T>::degree(T vertex) {
     to_matrix(); //> Converte de volta para matriz de adjacências para manter a consistência da representação do grafo
     return degree;
 }
+
+template <typename T>
+bool Graph<T>::is_adjacent(T vertex1, T vertex2) {
+   to_matrix(); //> Converte para matriz de adjacências para facilitar a verificação de adjacência entre os vértices
+    int vertex1_index = get_vertex_index(vertex1, false); //> Obtém o índice do primeiro vértice sem criar um novo vértice
+    int vertex2_index = get_vertex_index(vertex2, false); //> Obtém o índice do segundo vértice sem criar um novo vértice
+
+    if (vertex1_index < 0 or vertex2_index < 0) {
+        std::cerr << "Error: vertex not found." << std::endl;
+        return false;  
+    }
+    
+    return m_matrix[vertex1_index][vertex2_index] != 0; //> Verifica se há uma aresta entre os dois vértices na matriz de adjacências
+    
+}
