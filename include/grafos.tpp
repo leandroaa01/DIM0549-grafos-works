@@ -82,8 +82,14 @@ void Graph<T>::add(T origin, T destiny) {
 
      if (use_list) {
         m_list[origin_index].push_back(destiny); //> Adiciona o vértice de destino à lista de adjacências do vértice de origem
+        if( not is_targeted){
+             m_list[destiny_index].push_back(origin); //> Adiciona o vértice de origem à lista de adjacências do vértice de destino (grafo não direcionado)
+        }
     } else {
         m_matrix[origin_index][destiny_index] = 1; //> Marca a presença da aresta na matriz de adjacências
+            if( not is_targeted){
+                m_matrix[destiny_index][origin_index] = 1; //> Marca a presença da aresta na matriz de adjacências (grafo não direcionado)
+            }
     }
 }
 
@@ -162,4 +168,17 @@ void Graph<T>::print() const {
 
         std::cout << "| \n";
     }
+}
+
+template <typename T>
+int Graph<T>::degree(T vertex) {
+    to_list(); //> Converte para lista de adjacências para facilitar o cálculo do grau do vértice
+    int vertex_index = get_vertex_index(vertex, false); //> Obtém o índice do vértice sem criar um novo vértice
+    if (vertex_index < 0) {
+        std::cerr << "Error: vertex not found." << std::endl;
+        return -1;  
+    }
+    auto degree = m_list[vertex_index].size(); //> Retorna o número de vizinhos do vértice, que corresponde ao seu grau
+    to_matrix(); //> Converte de volta para matriz de adjacências para manter a consistência da representação do grafo
+    return degree;
 }
