@@ -88,6 +88,13 @@ public:
     void add(Type origin, Type destiny);
 
     /**
+     * @brief  Adiciona uma aresta entre os vértices de origem e destino.
+     * O método verifica se o grafo está usando lista ou matriz de adjacências e adiciona a aresta na estrutura correspondente.
+     * @param edge representa o par ordenado com a origem e o destino respectivamente
+     */
+    void add(std::pair<Type, Type> edge);
+
+    /**
      * @brief  Remove uma aresta entre os vértices de origem e destino.
      * O método verifica se o grafo está usando lista ou matriz de adjacências e remove a aresta na estrutura correspondente.
      * @param origin  representa o vértice de origem da aresta.

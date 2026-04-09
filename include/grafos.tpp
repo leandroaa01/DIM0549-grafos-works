@@ -107,6 +107,10 @@ void Graph<T>::add(T origin, T destiny) {
             }
     }
 }
+template <typename T>
+void Graph<T>::add(std::pair<T, T> edge){
+    add(edge.first, edge.second);
+}
 
 template <typename T>
 void Graph<T>::remove(T origin, T destiny) {
