@@ -1,3 +1,11 @@
+
+#pragma once
+
+#ifndef GRAPH_TPP
+#define GRAPH_TPP
+
+#include "grafos.hpp"
+
 template <typename T>
 int Graph<T>::get_vertex_index(T vertex, bool create) {
     auto it = m_vertex_index.find(vertex); //> Procura o vértice no mapa de índices
@@ -275,3 +283,4 @@ bool Graph<T>::is_bipartite() {
 
     return true;
 }
+#endif

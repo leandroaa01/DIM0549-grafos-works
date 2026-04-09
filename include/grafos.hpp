@@ -1,14 +1,18 @@
 /**
  * @file grafos.hpp
  * @author  Leandro Andrade(email:)
- * @author  Heitor ...
+ * @author  Heitor Campos()
  * @brief  classe que representa um grafo
  * @version 0.1
  * @date 2026-04-07
  * @copyright Copyright (c) 2026
  * 
  */
-#pragma  once
+
+
+#pragma once
+#ifndef GRAPH_HPP
+#define GRAPH_HPP
 
 #include <algorithm>
 #include <vector>
@@ -17,6 +21,7 @@
 #include <iostream>
 #include <queue>
 #include <stack>
+
 
 template <typename T>
 using Matriz = std::vector<std::vector<T>>; //> Define um alises para uma matriz de adjacências de tipo T
@@ -123,3 +128,4 @@ public:
 };
 
 #include "grafos.tpp"
+#endif
