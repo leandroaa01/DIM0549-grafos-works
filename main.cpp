@@ -1,4 +1,5 @@
 #include "include/grafos.hpp"
+#include "include/parser/CreateParser.tpp"
 #include <cstdlib>
 
 int main(int argc, char const *argv[])
@@ -41,6 +42,15 @@ int main(int argc, char const *argv[])
     g3.add(3, 6);
     g3.print();
     std::cout << "g3 is bipartite: " << (g3.is_bipartite() ? "Yes" : "No") << std::endl;
-     
+    
+    
+
+
+    std::unique_ptr<psr::Parser<int>> parser = CreateParser::create<int>( psr::ParserType::TXT);
+    Graph<int> graph = parser->parse(argv[1]);
+
+    graph.print();
+
+
     return 0;
 }
