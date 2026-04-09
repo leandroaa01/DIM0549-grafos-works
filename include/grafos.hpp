@@ -42,6 +42,7 @@ private:
    std::unordered_map<Type, int> m_vertex_index; //> Mapa para associar vértices a índices na matriz de adjacências
 
    int get_vertex_index(Type vertex, bool create = true); //> Método privado para obter ou criar o índice de um vértice
+   int get_newest_vertex(int vertex_index); //> Método privado para pegar a aresta a menor distância de um vértice específico
 public:
 
     /**
@@ -118,6 +119,7 @@ public:
     int total_vertices() const { return m_vertices; } //> Retorna o número total de vértices no grafo
 
     bool is_conexo(); //> Verifica se o grafo é conexo, ou seja, se existe um caminho entre qualquer par de vértices no grafo
+    bool is_bipartite(); //> Verifica se o grafo é bipartido, ou seja, se os vértices do grafo podem ser divididos em dois conjuntos disjuntos onde cada aresta conecta um vértice de um conjunto a um vértice do outro conjunto
 };
 
 #include "grafos.tpp"
