@@ -47,7 +47,7 @@ void Graph<T>::to_list() {
 
 template <typename T>
 void Graph<T>::to_matrix() {
-    if (!use_list) {return;} //> Se o grafo já estiver usando matriz de adjacências, não é necessário converter
+    if (not use_list) {return;} //> Se o grafo já estiver usando matriz de adjacências, não é necessário converter
 
     m_matrix.clear(); //> Limpa a matriz de adjacências antes de preenchê-la
     m_matrix.resize(m_vertices, std::vector<int>(m_vertices, 0)); //> Redimensiona a matriz de adjacências para o número de vértices, inicializando com zeros
@@ -198,5 +198,34 @@ bool Graph<T>::is_adjacent(T vertex1, T vertex2) {
     }
 
     return m_matrix[vertex1_index][vertex2_index] != 0; //> Verifica se há uma aresta entre os dois vértices na matriz de adjacências
+}
+
+template <typename T>
+bool Graph<T>::is_conexo() {
+    if (use_list) { to_matrix(); } 
+    auto g = m_matrix;
+    int vertex = 0; //> Inicia a busca a partir do primeiro vértice (índice 0)
+    std::vector<int> visited(m_vertices, 0); //> Vetor para marcar os vértices visitados durante a busca
+    std::queue<int> q; //> Fila para a busca em largura (BFS)
+    q.push(vertex); //> Adiciona o vértice inicial à fila
+    visited[vertex] = 1; //> Marca o vértice inicial como visitado
+        while (!q.empty()) {
+            int current = q.front(); //> Obtém o vértice atual da frente da fila
+            q.pop(); //> Remove o vértice atual da fila
     
+            for (int i = 0; i < m_vertices; ++i) {
+                if (g[current][i] != 0 && !visited[i]) { //> Verifica se há uma aresta entre o vértice atual e o vértice i, e se o vértice i ainda não foi visitado
+                    visited[i] = 1; //> Marca o vértice i como visitado
+                    q.push(i); //> Adiciona o vértice i à fila para continuar a busca
+                }
+            }
+        }
+
+        //> Verifica se todos os vértices foram visitados, o que indica que o grafo é conexo
+        for (int i = 0; i < m_vertices; ++i) {
+            if (!visited[i]) {
+                return false; //> Se algum vértice não foi visitado, o grafo não é conexo
+            }       
+}
+    return true; //> Se todos os vértices foram visitados, o grafo é conexo
 }
