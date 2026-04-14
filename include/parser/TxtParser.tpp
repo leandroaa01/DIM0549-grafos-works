@@ -1,6 +1,7 @@
 #ifndef TXT_PARSER_TPP
 #define TXT_PARSER_TPP
 
+#include "GraphParser.hpp"
 #include <string>
 #pragma once
 
@@ -8,11 +9,15 @@
 
 template <typename Type>
 Graph<Type> TxtParser<Type>::parse(const std::string& filePath){
+    if(filePath.empty()){
+        throw std::invalid_argument("Error! The file path provided is empty.");
+    }
     fs::path p{filePath};
 
     if(!fs::exists(p)){
         throw std::invalid_argument("Error! File not found: " + filePath + '\n');
     }
+
 
 
     std::ifstream ifs{filePath};
@@ -23,7 +28,6 @@ Graph<Type> TxtParser<Type>::parse(const std::string& filePath){
     int vertex = std::stoi(line);
 
     bool isFirstLineAfterVertex{true};
-    int  dirFlag{0};
 
     Graph<Type> graph(vertex);
 
@@ -42,14 +46,12 @@ Graph<Type> TxtParser<Type>::parse(const std::string& filePath){
         }
         else{
             if(isFirstLineAfterVertex){
-                dirFlag = std::stoi(line);
+                Graph<Type> graph(vertex, std::stoi(line));
             }
         }
         isFirstLineAfterVertex = false;
     }
     ifs.close();
-
-    graph.set_targeted(dirFlag);
 
     return graph;
 }
