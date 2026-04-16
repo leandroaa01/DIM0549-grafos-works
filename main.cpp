@@ -1,3 +1,4 @@
+#include "TxtParser.hpp"
 #include "include/grafos.hpp"
 #include "include/parser/CreateParser.tpp"
 #include <cstdlib>
@@ -47,19 +48,40 @@ int main(int argc, char const *argv[])
     
 
 
-    std::unique_ptr<psr::Parser<int>> parser = CreateParser::create<int>( psr::ParserType::TXT);
-
-    if (argc != 2) {
+    GraphType gt{GraphType::NONE};
+    std::string filePath{""};
+    if (argc < 2) {
         std::cerr << "Error: Wrong number of arguments.\n";
         std::cerr << "Usage: " << argv[0] << " <input_file_path>\n";
         return EXIT_FAILURE; // Retorna 1 para o sistema
     }
+    if(argc > 2){
+        if(!verify_args(argc, argv, gt, filePath)){
+            return EXIT_FAILURE;
+        }
+    }
+    if(gt == GraphType::CHAR){
+        std::unique_ptr<psr::Parser<char>> parser = CreateParser::create<char>( psr::ParserType::TXT); 
+
+        Graph<char> graph = parser->parse(filePath);
+
+        graph.to_incMat();
+        graph.print();
+
+        graph.dfs_directed_classification('a');
+
+    }
+    else{
+        std::unique_ptr<psr::Parser<int>> parser = CreateParser::create<int>( psr::ParserType::TXT); 
+
+        Graph<int> graph = parser->parse(argv[1]);
+
+        graph.to_incMat();
+        graph.print();
+
+        graph.dfs_directed_classification(1);
+
+    }
     
-    Graph<int> graph = parser->parse(argv[1]);
-
-    graph.to_incMat();
-    graph.print();
-
-
-    return 0;
+    return EXIT_SUCCESS;
 }

@@ -1,7 +1,6 @@
 #ifndef TXT_PARSER_TPP
 #define TXT_PARSER_TPP
 
-#include "GraphParser.hpp"
 #include <string>
 #pragma once
 
@@ -35,18 +34,18 @@ Graph<Type> TxtParser<Type>::parse(const std::string& filePath){
 
         if(line.empty())continue;
 
+        std::replace(line.begin(), line.end(), ',', ' ');
+
         std::stringstream ss{line};
         std::pair<Type, Type> pair;
 
-        ss >> pair.first;
-        if(ss.peek() == ',') ss.ignore();
         
-        if(ss >> pair.second){
+        if(ss >> pair.first >> pair.second){
             graph.add(pair);
         }
         else{
             if(isFirstLineAfterVertex){
-                Graph<Type> graph(vertex, std::stoi(line));
+                graph = Graph<Type>(vertex, std::stoi(line));
             }
         }
         isFirstLineAfterVertex = false;
@@ -54,6 +53,39 @@ Graph<Type> TxtParser<Type>::parse(const std::string& filePath){
     ifs.close();
 
     return graph;
+}
+
+
+
+
+bool verify_args(const int argc, const char* argv[], GraphType& graphType, std::string& filePath){
+
+    bool has_input_file{false};
+    for(int i{1}; i < argc; ++i){
+        if((std::string(argv[i]) == "-i" || std::string(argv[i]) == "--int") && graphType == GraphType::NONE){
+            graphType = GraphType::INT;
+        }
+        else if((std::string(argv[i]) == "-c" || std::string(argv[i]) == "--char") && graphType == GraphType::NONE){
+            graphType = GraphType::CHAR;
+        }
+        else if(!has_input_file && argv[i][0] != '-'){
+            filePath = std::string(argv[i]);
+            has_input_file = true;
+        }
+        else{
+            return false;
+        }
+    }
+    if (!has_input_file) {
+        std::cerr << "Erro: Caminho do arquivo nao fornecido.\n";
+        return false;
+    }
+
+    if(graphType == GraphType::NONE){
+        graphType = GraphType::INT;
+    }
+
+    return true;
 }
 
 #endif

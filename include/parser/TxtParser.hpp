@@ -17,10 +17,22 @@
 
 namespace fs = std::filesystem;
 
+#ifndef GRAPH_TYPE
+#define GRAPH_TYPE
+enum class GraphType{
+    INT,
+    CHAR,
+    NONE
+};
+#endif
+
+
+
 template <typename Type>
 class TxtParser : public psr::Parser<Type> {
 
     public:
+        GraphType graphType{GraphType::NONE};
         Graph<Type> parse(const std::string& filePath) override;
 };
 
