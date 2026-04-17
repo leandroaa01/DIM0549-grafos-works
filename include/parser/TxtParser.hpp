@@ -13,6 +13,7 @@
 #include <utility>
 
 
+#include "../grafos.hpp"
 #include "GraphParser.hpp"
 
 namespace fs = std::filesystem;
@@ -25,7 +26,6 @@ enum class GraphType{
     NONE
 };
 #endif
-
 
 
 template <typename Type>

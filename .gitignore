@@ -1,5 +1,6 @@
 # Ignorar pasta de build
 build/
+.cache
 
 # Ignorar arquivos temporários do sistema
 *.swp
