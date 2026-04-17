@@ -146,25 +146,49 @@ void Graph<T>::to_incMat(){
     }
     graphRep = rep::INCIDENCY_MATRIX;
 }
+template <typename T>
+void Graph<T>::add(T vertex) {
+    if (get_vertex_index(vertex, false) != -1) return; //> Caso o vértice já exista, não adiciona nada
+
+    m_vertices++; //> Aumenta em 1 a quantidade de vértices
+
+    for (auto& row : m_matrix) { //> Adiciona 1 linha a mais na matriz de adjacência
+        row.push_back(0); 
+    }
+    m_matrix.push_back(std::vector<int>(m_vertices, 0)); //> Adiciona 1 coluna a mais na matriz de adjacência
+
+    m_list.push_back(std::list<T>()); //> Adiciona a lista do vértice "vertex" na lista de adjacência
+
+    if (!m_inc_matrix.empty()) {        //> Caso a matriz de incidência já tenha sido criada:
+        int current_edges = m_inc_matrix[0].size();     //> Adiciona uma linha a mais para representar o novo vértice 
+        m_inc_matrix.push_back(std::vector<int>(current_edges, 0)); 
+    }
+
+    m_vertex_index[vertex] = m_vertices - 1; //> O íncide do novo vértice é o último
+}
 
 template <typename T>
 void Graph<T>::add(T origin, T destiny) {
     int origin_index = get_vertex_index(origin); //> Obtém o índice do vértice de origem, criando-o se necessário
     int destiny_index = get_vertex_index(destiny); //> Obtém o índice do vértice de destino, criando-o se necessário
 
-     if (origin_index < 0 or destiny_index < 0) { 
+     if (origin_index < 0 or destiny_index < 0) {   //> Caso não ache algum dos vértices, não faz nada
         std::cerr << "Error: vertex index out of bounds." << std::endl;
         return;
     }
-
-    if (origin_index < 0  or destiny_index < 0) {
-        return;
-    }
-    bool edge_exists = false;
-    if (graphRep == rep::ADJACENCY_LIST) {
+    bool edge_exists = false;       //> Flag que diz se a aresta existe no grafo
+    if (graphRep == rep::ADJACENCY_LIST) {  //> Caso seja representado por lista de adjacência, verifica se ele está na
         edge_exists = std::find(m_list[origin_index].begin(), m_list[origin_index].end(), destiny) != m_list[origin_index].end();
-    } else {
+    } else if(graphRep == rep::ADJACENCY_MATRIX) { //> Caso seja uma matriz de adjecência, verifica se a posiçao [o][d] possui valor igual a 1
         if (m_matrix[origin_index][destiny_index] == 1) edge_exists = true;
+    }
+    else{
+        for(int j{0}; j < m_edges; ++j){ //> Verifica se os dois vértices de origem e destino possuem uma conexão E_j
+            if(m_inc_matrix[origin_index][j] != 0 && m_inc_matrix[destiny_index][j] != 0){
+                edge_exists = true;
+                break;
+            }
+        }
     }
 
     if (not edge_exists) {
@@ -189,10 +213,105 @@ void Graph<T>::add(T origin, T destiny) {
         m_inc_matrix[destiny_index][m_edges - 1]  = is_targeted ? -1 : 1; //> Adiciona o vertice de destino da aresta
     }
 }
+
+
 template <typename T>
-void Graph<T>::add(std::pair<T, T> edge){
-    add(edge.first, edge.second);
+void Graph<T>::remove(T vertex){
+    int vertex_index = get_vertex_index(vertex, false); 
+    if(vertex_index < 0){       //> Caso não encontre o vértice, retorna
+        std::cerr << "Erro: Vértice não encontrado." << std::endl;
+        return;
+    }
+
+    T last_vertex = get_vertex_label(m_vertices - 1); //> Último vértice do grafo
+
+    int edges_removed = 0; //> Contador de arestas removidas
+    
+    if (graphRep == rep::ADJACENCY_LIST && !m_list.empty()) { //> Caso seja uma lista de adjacência não vazia:
+        for(auto& adj_list : m_list){
+            edges_removed += std::count(adj_list.begin(), adj_list.end(), vertex); //> Soma a quantidade de arestas removidas
+        }
+        if (is_targeted) { //> caso seja direcionada:
+            edges_removed += m_list[vertex_index].size(); //> Adiciona o resto das arestas faltantes
+            if(std::find(m_list[vertex_index].begin(), m_list[vertex_index].end(), vertex) != m_list[vertex_index].end()){
+                edges_removed--;    //> Caso não encontre a lista de adjacência do vértice, decrementa (não contar arestas de origem e destino iguais)
+            }
+        }
+        
+    } 
+    else if (graphRep == rep::ADJACENCY_MATRIX && !m_matrix.empty()) { //> Caso seja uma matriz de adjacência não vazia:
+        for (int i = 0; i < m_vertices; ++i) { 
+            if (m_matrix[i][vertex_index] != 0) edges_removed++; //> Adiciona a quantidade de 1 (representa uma ligação entre dois vértices) na quantidade de 
+                                                                 //> arestas removidas
+        }
+        if (is_targeted) {                                       //> Caso seja direcionado:
+            for (int j = 0; j < m_vertices; ++j) {
+                if (m_matrix[vertex_index][j] != 0) edges_removed++; //> Adiciona o resto das arestas faltantes
+            }
+            if(m_matrix[vertex_index][vertex_index] != 0)edges_removed--; //> Caso encontre uma aresta que começa e termina em vertex, decrementa.
+        }
+    }
+    
+    if (graphRep != rep::INCIDENCY_MATRIX) {    //> Reduz o total de arestas (Se for matriz de incidência, o loop final já faz isso)
+        m_edges -= edges_removed;              
+    }
+
+    if(vertex_index != m_vertices - 1){ //> Caso o índice do vertex não seja o último, realiza um swap em lista e matriz de adjacência, trocando o
+                                        //> vértice original (com suas arestas) com o último vértice (e suas arestas).
+        m_vertex_index[last_vertex] = vertex_index;  
+        
+        if (!m_matrix.empty()) {    //> Troca em uma matriz de adjecência
+            std::swap(m_matrix[vertex_index], m_matrix[m_vertices - 1]);
+            for(int i{0}; i < m_vertices; ++i){
+                std::swap(m_matrix[i][vertex_index], m_matrix[i][m_vertices - 1]);
+            }
+        }
+        
+        if (!m_list.empty()) { //> Troca em uma lista de adjacência
+            std::swap(m_list[vertex_index], m_list[m_vertices - 1]);
+        }
+    }
+
+    if (!m_matrix.empty()) { //> Após a troca, remove a última linha e coluna da matriz de adjacência (elas que estão representando o vértice removido agora)
+        m_matrix.pop_back();
+        for(auto& r : m_matrix){
+            r.pop_back();
+        }
+    }
+
+    if (!m_list.empty()) { //> Após a troca, remove a última lista e todas as aparições do vértice removido das outras listas
+        m_list.pop_back();
+        for(auto& adj_list : m_list){
+            adj_list.remove(vertex);
+        }
+    }
+    if(!m_inc_matrix.empty()){  //> Caso a matriz de incidência exista (já tiver sido criada)
+        int num_cols = m_inc_matrix[vertex_index].size(); //> Variável que guarda a quantidade de colunas da matriz
+
+        for(int col{num_cols-1}; col >= 0; --col){
+            if(m_inc_matrix[vertex_index][col] != 0){       //> Caso tenha uma conexão envolvendo o vértice que será removido:
+                int last_col = m_inc_matrix[0].size() - 1;  //> Variável que guarda a posição da última coluna da matriz
+                if(col != last_col){                        //> Caso a conexão encontrada não seja a última na matriz:
+                    for(int i{0}; i < m_vertices; ++i){
+                        std::swap(m_inc_matrix[i][col], m_inc_matrix[i][last_col]); //> Troca a coluna da conexão pela última coluna da matriz
+                    }
+                }
+                for(int i{0}; i < m_vertices; ++i){         //> Remove a última coluna da matriz
+                    m_inc_matrix[i].pop_back();
+                }
+                if (graphRep == rep::INCIDENCY_MATRIX) m_edges--; //> Caso seja uma matriz de incidência, decrementa a quantidade de arestas
+            }
+        }
+        if(vertex_index != m_vertices - 1){ //> Caso o vértice não seja a última linha, troca a posição das duas linhas
+            std::swap(m_inc_matrix[vertex_index], m_inc_matrix[m_vertices - 1]);
+        }
+        m_inc_matrix.pop_back();    //> Remove a última linha da matriz (garantido que seja a linha do vértice)
+    }
+
+    m_vertex_index.erase(vertex); //> Remove o vértice do mapa dos índices do grafo
+    m_vertices--;                 //> Decrementa a quantidade de vértices no grafo
 }
+
 
 template <typename T>
 void Graph<T>::remove(T origin, T destiny) {
@@ -232,7 +351,7 @@ void Graph<T>::remove(T origin, T destiny) {
 
 template <typename T>
 void Graph<T>::print() const {
-    if (graphRep == rep::ADJACENCY_LIST) {
+    if (graphRep == rep::ADJACENCY_LIST) {  //> Caso seja uma lista de Adjacência
         for (int i = 0; i < m_vertices; ++i) {
             //> Encontra o rótulo do vértice correspondente ao índice i
             auto label = std::find_if(m_vertex_index.begin(), m_vertex_index.end(), [i](const auto& pair) {
@@ -252,7 +371,7 @@ void Graph<T>::print() const {
             std::cout << '\n';
         }
         return;
-    } else if (graphRep == rep::INCIDENCY_MATRIX) {
+    } else if (graphRep == rep::INCIDENCY_MATRIX) { //> Caso seja uma matriz de Incidência
         for (int e = 0; e < m_edges; ++e) {
             std::cout << "E" << e << " ";
         }
@@ -271,6 +390,7 @@ void Graph<T>::print() const {
             std::cout << "\n";
         }
     }
+    else if(graphRep == rep::ADJACENCY_MATRIX){ //> Caso seja uma matriz de adjacência
     std::cout << "   ";
     for (int i = 0; i < m_vertices; ++i) {
         auto valor = std::find_if(m_vertex_index.begin(), m_vertex_index.end(), [i](const auto& pair) {
@@ -280,7 +400,7 @@ void Graph<T>::print() const {
         if (valor != m_vertex_index.end()) {
             std::cout << valor->first << " ";
         } else {
-            std::cout << "? ";
+            std::cout << "? "; //> Caso não encontre o valor.
         }
     }
     std::cout << "\n";
@@ -292,7 +412,7 @@ void Graph<T>::print() const {
         if (valor != m_vertex_index.end()) {
             std::cout << valor->first << "| ";
         } else {
-            std::cout << "?| ";
+            std::cout << "?| "; //> Caso não encontre o valor.
         }
 
         for (int j = 0; j < m_vertices; ++j) {
@@ -300,6 +420,7 @@ void Graph<T>::print() const {
         }
         std::cout << "| \n";
     }
+}
 }
 
 template <typename T>
@@ -360,8 +481,8 @@ std::vector<T> Graph<T>::bfs(T start_vertex){
 }
 template <typename T>
 void Graph<T>::dfs_rec(int index, std::vector<T>& visit_order, std::vector<bool>& visited){
-    visited[index] = true;
-    visit_order.push_back(get_vertex_label(index));
+    visited[index] = true;                          //> Marca o vértice como visitado
+    visit_order.push_back(get_vertex_label(index)); //> Adiciona o vértice no vector de ordem
 
     for(auto& neightbor : m_list[index]){
         int w = get_vertex_index(neightbor, false);
@@ -371,16 +492,16 @@ void Graph<T>::dfs_rec(int index, std::vector<T>& visit_order, std::vector<bool>
     }
 }
 template <typename T>
-std::vector<T> Graph<T>::dfs(T start_vertex){
-    std::vector<T> visit_order;
+std::vector<T> Graph<T>::dfs(T start_vertex){   
+    std::vector<T> visit_order;                             //> Vetor que guarda a ordem em que cada vértice foi visitado
     int start_index = get_vertex_index(start_vertex);
-    if(start_index == -1)return visit_order;
+    if(start_index == -1)return visit_order;                //> Caso o vértice não seja encontrado, retorna um vetor vazio
 
-    this->to_list();
+    this->to_list();    //> Otimização: realizar a busca em uma lista de adjacência é mais rápido que as matrizes de adjacência e incidência  
 
-    std::vector<bool> visited(m_vertices, false);
+    std::vector<bool> visited(m_vertices, false); //> Vetor que guarda se cada vértice foi visitado
     
-    dfs_rec(start_index, visit_order, visited);
+    dfs_rec(start_index, visit_order, visited); //> Chamada da função recursiva começando do vértice passado.
 
     return visit_order;
 }
@@ -416,60 +537,72 @@ bool Graph<T>::is_conexo() {
 }
 template <typename T>
 void Graph<T>::find_articulations(){
-    if(is_targeted)return;
+    if(is_targeted) return; //> Não faz sentido encontrar articulações em Dígrafos neste contexto
 
-    this->to_list();
+    this->to_list(); //> Otimização: realizar a busca em uma lista de adjacência é mais rápido que nas matrizes de adjacência e incidência
 
-    int dfs_time{0};
-    std::vector<int> dfn(m_vertices, 0);
-    std::vector<int> parent(m_vertices, -1);
-    std::vector<bool> is_articulation(m_vertices, false);
-    std::vector<std::pair<int, int>> stack_edges;
+    int dfs_time{0};                                      //> Contador da ordem de acesso dos vértices
+    std::vector<int> dfn(m_vertices, 0);                  //> Vetor que guarda a ordem de descoberta de cada vértice
+    std::vector<int> parent(m_vertices, -1);              //> Vetor que guarda os pais de cada vértice na árvore da DFS
+    std::vector<bool> is_articulation(m_vertices, false); //> Vetor booleano que marca se um vértice é uma articulação
+    std::vector<std::pair<int, int>> stack_edges;         //> Pilha que guarda as arestas visitadas para formar os blocos biconexos
 
-    auto lowpt = [&](auto&& self, int u){
-              dfn[u] = ++dfs_time;  
-              int lowest_vertex{u};
-              int children{0};
+    auto lowpt = [&](auto&& self, int u){   //> Função Lambda que executa a DFS e calcula o lowpt
+        dfn[u] = ++dfs_time;                //> Atribui o tempo de descoberta ao vértice u
+        int lowest_vertex{u};               //> O menor vértice alcançável a partir de u (inicialmente é ele mesmo)
+        int children{0};                    //> Conta quantos filhos u tem na árvore da DFS
 
-              for(auto& neighbor : m_list[u]){
-                int v = get_vertex_index(neighbor, false);
-                if(v == -1 || v == parent[u])continue;
+        for(auto& neighbor : m_list[u]){
+            int v = get_vertex_index(neighbor, false);  //> Obtém o índice do vizinho v
+            if(v == -1 || v == parent[u]) continue;     //> Ignora se for inválido ou se for a aresta que volta diretamente para o pai
 
-                if(dfn[v] < dfn[u] && dfn[v]){
-                    stack_edges.push_back({u, v});
-                    if(dfn[v] < dfn[lowest_vertex]){
-                        lowest_vertex = v;
-                    }
-                }
-                else if(dfn[v] == 0){
-                    children++;
-                    parent[v] = u;
-                    stack_edges.push_back({u, v});
-                    
-                    int child_lowest_vertex = self(self, v);
-
-                    if(dfn[child_lowest_vertex] < dfn[lowest_vertex]){
-                        lowest_vertex = child_lowest_vertex;
-                    }
-                    if((parent[u] == -1 && children > 1) ||(parent[u] != -1 && dfn[child_lowest_vertex] >= dfn[u]) ){
-                        is_articulation[u] = true;
-
-                        while (true) {
-                            auto edge = stack_edges.back();
-                            stack_edges.pop_back();
-                            std::cout << "(" << get_vertex_label(edge.first) << ", " << get_vertex_label(edge.second) << ") ";
-                            if (edge.first == u && edge.second == v) break;
-                        }
-                    }
+            //> CASO 1: v já foi visitado e tem um tempo menor que u (Encontramos uma Aresta de Retorno)
+            if(dfn[v] < dfn[u] && dfn[v] != 0){      
+                stack_edges.push_back({u, v});          //> Adiciona a aresta na pilha
+                if(dfn[v] < dfn[lowest_vertex]){        //> Atualiza o lowest_vertex se o dfn de v for menor que o atual
+                    lowest_vertex = v;
                 }
             }
-        return lowest_vertex;
-        };
+            //> CASO 2: v ainda não foi visitado (Encontramos uma Aresta de Árvore)
+            else if(dfn[v] == 0){ 
+                children++;                    //> v se torna um filho oficial de u na árvore
+                parent[v] = u;                 //> u é definido como pai de v
+                stack_edges.push_back({u, v}); //> Adiciona a aresta na pilha
+                
+                int child_lowest_vertex = self(self, v); //> Chamada recursiva da DFS para explorar o filho v
 
+                //> Atualiza o lowest_vertex de u com base no retorno do filho v
+                if(dfn[child_lowest_vertex] < dfn[lowest_vertex]){
+                    lowest_vertex = child_lowest_vertex;
+                }
+
+                //> VERIFICAÇÃO DE ARTICULAÇÃO:
+                //> 1. u é raiz e tem mais de 1 filho
+                //> 2. u não é raiz e o filho v não consegue alcançar um ancestral de u (dfn[child_lowest_vertex] >= dfn[u])
+                if((parent[u] == -1 && children > 1) || (parent[u] != -1 && dfn[child_lowest_vertex] >= dfn[u])){
+                    is_articulation[u] = true; //> Marca u como ponto de articulação.
+
+                    std::cout << "Bloco Biconexo: ";
+                    //> Desempilha as arestas até encontrar a aresta (u, v) que causou a articulação
+                    while (true) {
+                        auto edge = stack_edges.back();
+                        stack_edges.pop_back();
+                        std::cout << "(" << get_vertex_label(edge.first) << ", " << get_vertex_label(edge.second) << ") ";
+                        if (edge.first == u && edge.second == v) break; //> Para ao remover a raiz deste bloco
+                    }
+                    std::cout << '\n';
+                }
+            }
+        }
+        return lowest_vertex; //> Retorna o menor vértice que a subárvore de u consegue alcançar
+    };
+
+    //> Garante que todos os componentes conexos sejam visitados
     for(int i{0}; i < m_vertices; ++i){
-        if(!dfn[i]){
+        if(!dfn[i]){ //> Se o vértice ainda não foi descoberto, inicia uma nova DFS a partir dele
             lowpt(i);
 
+            //> Ao finalizar a DFS de uma componente, pode sobrar um bloco biconexo na raiz (caso ela não seja articulação)
             if(!stack_edges.empty()){
                 std::cout << "Bloco Biconexo: ";
                 while (!stack_edges.empty()) {
@@ -481,15 +614,17 @@ void Graph<T>::find_articulations(){
             }
         }
     }
-    std::cout << "Pontos de Articulacao: ";
-    bool has_art = false;
+    
+    //> Print dos pontos de articulação encontrados
+    std::cout << "Pontos de Articulacao: "; 
+    bool has_art = false;                   
     for (int i = 0; i < m_vertices; ++i) {
         if (is_articulation[i]) {
             std::cout << get_vertex_label(i) << " ";
-            has_art = true;
+            has_art = true; 
         }
     }
-    if (!has_art) std::cout << "Nenhum";
+    if (!has_art) std::cout << "Nenhum"; //> Caso o grafo não possua nenhuma articulação
     std::cout << '\n';
 }
 
@@ -507,61 +642,59 @@ int Graph<T>::get_newest_vertex(int current) {
 
 template <typename T>
 bool Graph<T>::is_bipartite() {
-    enum class Color { RED, BLUE, NONE };
+    enum class Color { RED, BLUE, NONE }; //> Enum que classifica a cor de cada vértice
 
-    if (graphRep == rep::ADJACENCY_LIST) { to_matrix(); }
+    if (graphRep != rep::ADJACENCY_MATRIX) { to_matrix(); } //> A implementação é baseada em matriz de adjacência, então
+                                                            //> garante que a matriz seja representada de acordo
 
-    auto g = m_matrix;
-    std::vector<Color> colors(m_vertices, Color::NONE);
-    std::stack<int> s;
+    auto g = m_matrix;            //> Matriz temporária que representa o grafo
+    std::vector<Color> colors(m_vertices, Color::NONE);     //> Vetor que guarda a cor de cada vértice do grafo
+    std::stack<int> s;                                      //> Pilha (LIFO) para gerenciar a busca dos vértices
 
     for (int start = 0; start < m_vertices; ++start) {
-        if (colors[start] != Color::NONE) { continue; }
+        if (colors[start] != Color::NONE) { continue; } //> Se possuir cor, ignora
 
-        colors[start] = Color::RED;
-        s.push(start);
+        colors[start] = Color::RED; //> Define a cor inicial como vermelho
+        s.push(start);            //> Adiciona o vértice na pilha
 
         while (not s.empty()) {
-            int current = s.top();
+            int current = s.top();  //> Retira o vértice do topo da pilha
             s.pop();
 
             for (int i = 0; i < m_vertices; ++i) {
-                if (g[current][i] == 0) { continue; }
+                if (g[current][i] == 0) { continue; }   //> Caso o vértice não possua aresta com o vértice na posição i, ignora
 
-                if (colors[i] == Color::NONE) {
+                if (colors[i] == Color::NONE) {         //> Caso o vértice de posição 'i' não tenha cor, vai colorir com base em 's'
                     colors[i] = (colors[current] == Color::RED) ? Color::BLUE : Color::RED;
-                    s.push(i);
+                    s.push(i);                      
                 } else if (colors[i] == colors[current]) {
-                    return false;
+                    return false;                       //> Caso os dois vértices tenham a mesma cor, ele não é bipartido
                 }
             }
         }
     }
 
-    return true;
+    return true; //> Se passou por todos os vértices sem dar erro, é bipartido
 }
 
 
 template <typename T>
 void Graph<T>::dfs_directed_classification(T start_vertex) {
-    if (!is_targeted) {
-        std::cout << "Aviso: A classificacao de arestas em Arvore, Retorno, Avanco e Cruzamento "
-                  << "e uma propriedade tipicamente aplicada a Digrafos.\n";
-    }
+    if (!is_targeted) return; //> Apenas classificar cada um em Grafos não direcionados. 
 
     int start_index = get_vertex_index(start_vertex, false);
-    if (start_index == -1) {
+    if (start_index == -1) {                                        //> Caso o vértice não seja encontrado, acaba a função
         std::cerr << "Erro: Vertice inicial nao encontrado.\n";
         return;
     }
 
-    this->to_list(); 
+    this->to_list(); //> Otimização: realizar a busca em uma lista de adjacência é mais rápido que as matrizes de adjacência e incidência 
 
     enum class Color { WHITE, GRAY, BLACK };
     std::vector<Color> color(m_vertices, Color::WHITE);
     std::vector<int> discovery_time(m_vertices, 0); //> Profundidade de entrada (d)
     std::vector<int> finish_time(m_vertices, 0);    //> Profundidade de saída (f)
-    std::vector<int> parent(m_vertices, -1);
+    std::vector<int> parent(m_vertices, -1);        //> Vetor que guarda os pais de cada vértice
     
     int time = 0; //> Relógio global da DFS
 
@@ -577,18 +710,18 @@ void Graph<T>::dfs_directed_classification(T start_vertex) {
 
             std::cout << "Aresta (" << get_vertex_label(u) << " -> " << get_vertex_label(v) << "): ";
 
-            if (color[v] == Color::WHITE) {
+            if (color[v] == Color::WHITE) { //> Caso seja uma aresta de Árvore:
                 std::cout << "Arvore\n";
                 parent[v] = u;
                 self(self, v); 
             } 
-            else if (color[v] == Color::GRAY) {
+            else if (color[v] == Color::GRAY) { //> Caso seja uma aresta de Retorno:
                 std::cout << "Retorno\n";
             } 
-            else if (color[v] == Color::BLACK) {
-                if (discovery_time[u] < discovery_time[v]) {
+            else if (color[v] == Color::BLACK) {    
+                if (discovery_time[u] < discovery_time[v]) { //> Caso seja uma aresta de avanço
                     std::cout << "Avanco\n";
-                } else {
+                } else {                                     //> Caso seja uma areta de cruzamento
                     std::cout << "Cruzamento\n";
                 }
             }
@@ -611,6 +744,24 @@ void Graph<T>::dfs_directed_classification(T start_vertex) {
                       << "]: Entrada = " << discovery_time[i] 
                       << ", Saida = " << finish_time[i] << "\n";
         }
+    }
+}
+template <typename T>
+std::string Graph<T>::getRepresentation(){
+    switch(graphRep){   
+        case Representation::ADJACENCY_MATRIX:
+            return "Matriz de Adjacência"; //> Retorna a representação em formato de string
+        break;
+        case Representation::ADJACENCY_LIST:
+            return "Lista de Adjacência";  //> Retorna a representação em formato de string
+        break;
+        case Representation::INCIDENCY_MATRIX:
+            return "Matriz de Adjacência"; //> Retorna a representação em formato de string
+        break;
+        default:
+            std::cerr << "Erro: Representação inválida!" << std::endl; //> Caso a representação esteja inválida 
+                                                                       //> (impossível, apenas está aqui para facilitar alterações futuras) 
+            return "";
     }
 }
 #endif

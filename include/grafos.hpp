@@ -35,7 +35,6 @@ enum class Representation { //> Enum que guarda todas as possíveis representaç
       INCIDENCY_MATRIX
 };
 
-
 /**
  * @brief Classe que representa um grafo
  * O grafo pode ser representado tanto por uma matriz de adjacências quanto por uma lista de adjacências. 
@@ -56,8 +55,8 @@ private:
 
    int get_vertex_index(Type vertex, bool create = true); //> Método privado para obter ou criar o índice de um vértice
    int get_newest_vertex(int vertex_index); //> Método privado para pegar a aresta a menor distância de um vértice específico
-   Type get_vertex_label(int index);
-   void dfs_rec(int index, std::vector<Type>& visit_order, std::vector<bool>& visited);
+   Type get_vertex_label(int index);        //> Método privado que retorna o vértice com base no índice recebido
+   void dfs_rec(int index, std::vector<Type>& visit_order, std::vector<bool>& visited); //> Método privado que realiza a parte recursiva da função dfs
 
 public:
 
@@ -92,23 +91,29 @@ public:
     void to_incMat();
 
     /**
+     * @brief  Adiciona um vértice no grafo.
+     * O método verifica qual a representação do grafo e adiciona o vértice na estrutura correspondente.
+     * @param vertex  representa o vértice que será criado.
+     */
+    void add(Type vertex);
+
+    /**
      * @brief  Adiciona uma aresta entre os vértices de origem e destino.
-     * O método verifica se o grafo está usando lista ou matriz de adjacências e adiciona a aresta na estrutura correspondente.
+     * O método verifica qual a representação do grafo e adiciona a aresta na estrutura correspondente.
      * @param origin  representa o vértice de origem da aresta.
      * @param destiny representa o vértice de destino da aresta.
      */
     void add(Type origin, Type destiny);
 
     /**
-     * @brief  Adiciona uma aresta entre os vértices de origem e destino.
-     * O método verifica se o grafo está usando lista ou matriz de adjacências e adiciona a aresta na estrutura correspondente.
-     * @param edge representa o par ordenado com a origem e o destino respectivamente
+     * @brief  Remove um vértice e todas as suas arestas do grafo.
+     * @param vertex  representa o vértice que será removido.
      */
-    void add(std::pair<Type, Type> edge);
+    void remove(Type vertex);
 
     /**
      * @brief  Remove uma aresta entre os vértices de origem e destino.
-     * O método verifica se o grafo está usando lista ou matriz de adjacências e remove a aresta na estrutura correspondente.
+     * O método verifica a representação do grafo e remove a aresta na estrutura correspondente.
      * @param origin  representa o vértice de origem da aresta.
      * @param destiny representa o vértice de destino da aresta.
      */
@@ -169,6 +174,7 @@ public:
       */
     void dfs_directed_classification(Type start_vertex);
 
+
     void find_articulations(); //> Encontra todas as articulações do grafo e printa no terminal
 
     int total_edges() const { return m_edges; } //> Retorna o número total de arestas no grafo
@@ -176,7 +182,10 @@ public:
 
     bool is_conexo(); //> Verifica se o grafo é conexo, ou seja, se existe um caminho entre qualquer par de vértices no grafo
     bool is_bipartite(); //> Verifica se o grafo é bipartido, ou seja, se os vértices do grafo podem ser divididos em dois conjuntos disjuntos onde cada aresta conecta um vértice de um conjunto a um vértice do outro conjunto
-};
+
+    std::string getRepresentation(); //> Retorna a representação do grafo (matriz de adj, lista de adj ou matriz de inc) em formato de string
+
+  };
 
 #include "grafos.tpp"
 #endif
