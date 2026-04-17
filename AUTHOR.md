@@ -1,8 +1,8 @@
-# Introduction
+# Introdução
 
 Este projeto implementa algoritmos de grafos em C++.
 
-# Author(s)
+# Autores
 
 nome: Heitor Fernandes Paes Leme Campos
 email: Heitor.campos.711@ufrn.edu.br
@@ -17,34 +17,34 @@ Aqui temos as implementações realizadas na classe Graph:
 
 A (Para Grafos):
 
-| Item                                      |    Realizada    |
-| ----------------------------------------- | :-------------: |
-| 1: Representação a partir da Lista de ADJ |       V         |
-| 2: Representação a partir da Matriz de ADJ|       V         |
-| 3: Representação a partir da Matriz de INC|       V         |
-| 4: Conversões entre Matriz de ADJ e Lista de ADJ           |       V         |
-| 5: Função que calcula o grau de vértices  |       V         |
-| 6: Função que diz se dois vértices são adjacentes|       V         |
-| 7: Função que diz o n⁰ total de vértices  |       V         |
-| 8: Função que diz o n⁰ total de arestas   |       V         |
-| 9: Inclusão de um novo vértice            |       V         |
-| 10: Exclusão de um vértice existente      |       V         |
-| 11: Função que diz se o grafo é conexo    |       V         |
-| 12: Função que diz se o grafo é bipartido ***(OPC)*** |       V         |
-| 13: Busca em Largura a partir de um vértice     |       V         |
-| 14: Busca em Profundidade a partir de um vértice|       V         |
-| 15: Determinação de articulações e blocos |       V         |
+| Item                                      |    Realizada    |   Implementado Por |
+| ----------------------------------------- | :-------------: | :---------------: |
+| 1: Representação a partir da Lista de ADJ |       V         |  Leandro |
+| 2: Representação a partir da Matriz de ADJ|       V         |  Leandro e Heitor |
+| 3: Representação a partir da Matriz de INC|       V         |  Heitor |
+| 4: Conversões entre Matriz de ADJ e Lista de ADJ           |       V         |                                                       Leandro e Heitor |
+| 5: Função que calcula o grau de vértices  |       V         |    Leandro |
+| 6: Função que diz se dois vértices são adjacentes|       V         | Leandro |
+| 7: Função que diz o n⁰ total de vértices  |       V         | Leandro |
+| 8: Função que diz o n⁰ total de arestas   |       V         | Leandro |
+| 9: Inclusão de um novo vértice            |       V         | Leandro e Heitor |
+| 10: Exclusão de um vértice existente      |       V         | Leandro e Heitor |
+| 11: Função que diz se o grafo é conexo    |       V         | Leandro |
+| 12: Função que diz se o grafo é bipartido ***(OPC)*** |       V         | Leandro |
+| 13: Busca em Largura a partir de um vértice     |       V         | Heitor|
+| 14: Busca em Profundidade a partir de um vértice|       V         | Heitor|
+| 15: Determinação de articulações e blocos |       V         | Heitor|
 
 B (Para Digrafos):
 
-| Item                                      |    Realizada    |
-| ----------------------------------------- | :-------------: |
-| 16: Representação de Digrafos a partir da Matriz de ADJ |       V       |
-| 17: Representação de Digrafos a partir da Matriz de INC |       V       |
-| 18: Determinar se o grafo é subjacente ***(OPC)***   |       X       |
-| 19: Conversão de Matriz de INC para Estrela Direta ***(OPC)***|       X       |
-| 20: Busca em Profundidade Com determinação de profundidade e definições |       V       |
-| 21: Implementar uma aplicação usando DFT  ***(OPC)***   |       X       |
+| Item                                      |    Realizada    |   Implementado Por |
+| ----------------------------------------- | :-------------: |  :-------------:
+| 16: Representação de Digrafos a partir da Matriz de ADJ |       V       | Leandro e Heitor |
+| 17: Representação de Digrafos a partir da Matriz de INC |       V       |  Heitor |
+| 18: Determinar se o grafo é subjacente ***(OPC)***   |       X       | X |
+| 19: Conversão de Matriz de INC para Estrela Direta ***(OPC)***|       X       | X |
+| 20: Busca em Profundidade Com determinação de profundidade e definições |       V       | Heitor |
+| 21: Implementar uma aplicação usando DFT  ***(OPC)***   |       X       | X |
 # Como Compilar e Executar
 
 ## Requisitos

@@ -331,32 +331,32 @@ bool Graph<T>::is_adjacent(T vertex1, T vertex2) {
 
 template <typename T>
 std::vector<T> Graph<T>::bfs(T start_vertex){
-    std::vector<bool> visited(m_vertices, false);
-    std::vector<T> visit_order{};
-    std::queue<int> q;
+    std::vector<bool> visited(m_vertices, false); //> Vetor que guarda se cada vértice foi visidado
+    std::vector<T> visit_order{};                          //> Vetor que guarda a ordem em que cada vértice foi visitado
+    std::queue<int> q;                                     //> Fila (FIFO) de apoio para gerenciar o caminho da busca
 
     int start_index = get_vertex_index(start_vertex, false);
-    if(start_index == -1)return visit_order;
+    if(start_index == -1)return visit_order;    //> start_vertex não esteja no grafo, retorna um vetor vazio.
 
-    this->to_list();
+    this->to_list();    //> Otimização: realizar a busca em uma lista de adjacência é mais rápido que as matrizes de adjacência e incidência
 
     visited[start_index] = true;
-    q.push(start_index);
+    q.push(start_index);    //> Começa colocando o vértice "raiz" na fila
 
-    while(!q.empty()){
-        int v = q.front();
+    while(!q.empty()){    
+        int v = q.front();                                 //> Chama o topo da fila de "v"
         q.pop();
-        visit_order.push_back(get_vertex_label(v));
+        visit_order.push_back(get_vertex_label(v));  //> Adiciona o vértice v na ordem de encontro
 
-        for(auto& neightbor : m_list[v]){
+        for(auto& neightbor : m_list[v]){                   //> Visita os vizinhos do vértice v
             int w = get_vertex_index(neightbor, false);
-            if(w != -1 && !visited[w]){
-                visited[w] = true;
+            if(w != -1 && !visited[w]){                     //> Caso o vizinho não tenha sido visitado, visita e coloca na fila
+                visited[w] = true;              
                 q.push(w);
             }
         }
     }
-    return visit_order;
+    return visit_order;                                     //> Retorna o vetor com a ordem de visitas
 }
 template <typename T>
 void Graph<T>::dfs_rec(int index, std::vector<T>& visit_order, std::vector<bool>& visited){
@@ -365,8 +365,8 @@ void Graph<T>::dfs_rec(int index, std::vector<T>& visit_order, std::vector<bool>
 
     for(auto& neightbor : m_list[index]){
         int w = get_vertex_index(neightbor, false);
-        if(w != -1 && !visited[w]){
-            dfs_rec(w, visit_order, visited);
+        if(w != -1 && !visited[w]){                         //> Se o vizinho não for visitado
+            dfs_rec(w, visit_order, visited);   //> Chamada recursiva para o vizinho
         }
     }
 }

@@ -158,8 +158,18 @@ public:
       * @return vetor com cada vértice encontrado em ordem
       */
     std::vector<Type> dfs(Type start_vertex);
+
+    /**
+      * @brief Utiliza do algoritmo de Busca em Profundidade para explorar o grafo e 
+      * determinar a profundidade de entrada e saída de cada vértice e definir cada aresta
+      * como arestas de árvore, retorno, avanço ou cruzamento
+      *
+      * @note essa classificação irá apenas ser printada via cout e não será guardada/retornada pela função
+      * @param start_vertex representa o vértice "raiz" da busca
+      */
     void dfs_directed_classification(Type start_vertex);
-    void find_articulations();
+
+    void find_articulations(); //> Encontra todas as articulações do grafo e printa no terminal
 
     int total_edges() const { return m_edges; } //> Retorna o número total de arestas no grafo
     int total_vertices() const { return m_vertices; } //> Retorna o número total de vértices no grafo

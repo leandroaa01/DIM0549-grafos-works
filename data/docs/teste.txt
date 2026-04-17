@@ -1,0 +1,9 @@
+
+int (quantidade de vértices)
+bool (flag se é direcionado ou não (1 ou 0), opcional) 
+
+aresta1 (aresta no estilo: "vertice,vertice")
+aresta2
+...
+arestan
+
