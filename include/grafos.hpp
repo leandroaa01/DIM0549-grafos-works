@@ -138,8 +138,25 @@ public:
      * @return true   se os vértices forem adjacentes, ou false caso contrário.
      */
     bool is_adjacent(Type vertex1, Type vertex2); 
-
+    
+    /**
+      * @brief Utiliza do algoritmo de Busca em Largura (Breadth-First-Search) para explorar o grafo
+      * e encontrar um caminho entre o vértice de "raiz" da busca e todos os outros do grafo.
+      *
+      * @note o algoritmo foca em explorar todos os visinhos de cada vértice antes de ver os vértices que estão em um nível abaixo.
+      * @param start_vertex representa o vértice "raiz" da busca
+      * @return vetor com cada vértice encontrado em ordem
+      */
     std::vector<Type> bfs(Type start_vertex);
+
+    /**
+      * @brief Utiliza do algoritmo de Busca em Profundidade (Depth-First-Search) para explorar o grafo
+      * e encontrar um caminho entre o vértice de "raiz" da busca e todos os outros grafos
+      *
+      * @note o algoritmo foca em explorar o mais fundo possível antes de retroceder
+      * @param start_vertex representa o vértice "raiz" da busca
+      * @return vetor com cada vértice encontrado em ordem
+      */
     std::vector<Type> dfs(Type start_vertex);
     void dfs_directed_classification(Type start_vertex);
     void find_articulations();
