@@ -1,6 +1,7 @@
 # Ignorar pasta de build
 build/
-.cache
+bin/
+.cache/
 
 # Ignorar arquivos temporários do sistema
 *.swp
@@ -16,4 +17,4 @@ cmake_install.cmake
 Makefile
 
 # Ignorar executáveis
-/grafos
+bin/grafos
