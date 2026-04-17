@@ -56,8 +56,17 @@ B (Para Digrafos):
 
 1. Clone o repositório ou navegue até a pasta do projeto.
 
+```bash
+git clone https://github.com/leandroaa01/DIM0549-grafos-works.git
+```
+
 2. Gere os arquivos de build com o CMake:
 
+
+```bash
+configure.sh
+```
+Ou 
 ```bash
 cmake -S . -B build
 ```
@@ -91,3 +100,7 @@ onde:
  ./build/grafos entrada.txt -c -d  
  #(Lê o arquivo entrada.txt, com vértices do tipo char, formatado como um grafo direcionado).
  ```
+
+ ---
+
+&copy; DIMAp | Departamento de Informática e Matemática Aplicada (2016 - 2025)
