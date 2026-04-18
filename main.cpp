@@ -3,7 +3,13 @@
 #include "include/parser/GraphParser.hpp"
 #include "include/parser/TxtParser.hpp"
 #include <cstdlib>
+#include <functional>
 #include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
 
 using raw_str = const char*;
 using str = std::string;
@@ -33,6 +39,113 @@ Slecione a opção que deseja utilizar:
 
 void print_menu() { std::cout << MENU_OPCOES << "\n"; }
 
+template <typename T>
+void interactive_menu(Graph<T>& graph)
+{
+  constexpr bool is_char = std::is_same_v<T, char>;
+  auto example_pair = []() -> const char* { return is_char ? "A B" : "1 2"; };
+
+  auto read_vertex = [](const std::string& prompt) -> T {
+    T v{};
+    std::cout << prompt;
+    std::cin >> v;
+    return v;
+  };
+
+  auto read_pair = [](const std::string& prompt) -> std::pair<T, T> {
+    T a{}, b{};
+    std::cout << prompt;
+    std::cin >> a >> b;
+    return { a, b };
+  };
+
+  std::map<int, std::function<void()>> actions;
+  actions[1] = [&] {
+    graph.to_matrix();
+    std::cout << "Grafo em forma de " << graph.getRepresentation() << "\n";
+  };
+  actions[2] = [&] {
+    graph.to_list();
+    std::cout << "Grafo em forma de " << graph.getRepresentation() << "\n";
+  };
+  actions[3] = [&] {
+    graph.to_incMat();
+    std::cout << "Grafo em forma de " << graph.getRepresentation() << "\n";
+  };
+  actions[4] = [&] { std::cout << "Tamanho do grafo: " << graph.total_vertices() << "\n"; };
+  actions[5] = [&] { std::cout << "Quantidade de arestas: " << graph.total_edges() << "\n"; };
+  actions[6] = [&] { std::cout << "O grafo é conexo? " << (graph.is_conexo() ? "Sim" : "Não") << "\n"; };
+  actions[7] = [&] { std::cout << "O grafo é bipartido? " << (graph.is_bipartite() ? "Sim" : "Não") << "\n"; };
+  actions[8] = [&] {
+    auto [v1, v2] = read_pair(std::string("Digite os dois vértices para verificar se são adjacentes (ex: ") + example_pair() + "): ");
+    std::cout << "Os vértices " << v1 << " e " << v2 << " são adjacentes? " << (graph.is_adjacent(v1, v2) ? "Sim" : "Não")
+              << "\n";
+  };
+  actions[9] = [&] {
+    T vertex = read_vertex("Digite o vértice para verificar seu grau: ");
+    int degree = graph.degree(vertex);
+    std::cout << "O grau do vértice " << vertex << " é: " << degree << "\n";
+  };
+  actions[10] = [&] {
+    auto [origin, destiny] = read_pair(std::string("Digite os vértices de origem e destino para adicionar uma aresta (ex: ") + example_pair() + "): ");
+    graph.add(origin, destiny);
+  };
+  actions[11] = [&] {
+    auto [origin, destiny] = read_pair(std::string("Digite os vértices de origem e destino para remover uma aresta (ex: ") + example_pair() + "): ");
+    graph.remove(origin, destiny);
+  };
+  actions[12] = [&] {
+    T vertex = read_vertex("Digite o vértice a ser adicionado: ");
+    graph.add(vertex);
+  };
+  actions[13] = [&] {
+    T vertex = read_vertex("Digite o vértice a ser removido: ");
+    graph.remove(vertex);
+  };
+  actions[14] = [&] {
+    std::cout << "Imprimindo o grafo em forma de " << graph.getRepresentation() << "\n";
+    graph.print();
+  };
+  actions[15] = [&] {
+    T start = read_vertex("Digite o vértice de início para a busca em profundidade (DFS): ");
+    std::cout << "Resultado da busca em profundidade (DFS) a partir do vértice " << start << ": ";
+    graph.dfs(start);
+  };
+  actions[16] = [&] {
+    T start = read_vertex("Digite o vértice de início para a busca em largura (BFS): ");
+    std::cout << "Resultado da busca em largura (BFS) a partir do vértice " << start << ": ";
+    graph.bfs(start);
+  };
+  actions[17] = [&] {
+    T start = read_vertex("Digite o vértice de início para classificar as arestas usando DFS: ");
+    std::cout << "Classificação das arestas a partir do vértice " << start << ": ";
+    graph.dfs_directed_classification(start);
+  };
+  actions[18] = [&] {
+    std::cout << "Articulações do grafo: ";
+    graph.find_articulations();
+  };
+
+  while (true) {
+    print_menu();
+    std::cout << "Digite a opção desejada: ";
+
+    int option = 0;
+    std::cin >> option;
+    if (option == 0) {
+      return;
+    }
+
+    auto it = actions.find(option);
+    if (it == actions.end()) {
+      std::cout << "Opção inválida. Por favor, tente novamente.\n";
+      continue;
+    }
+
+    it->second();
+  }
+}
+
 void run(int argc, char const* argv[])
 {
   GraphType gt{ GraphType::NONE };
@@ -43,6 +156,9 @@ void run(int argc, char const* argv[])
     std::cerr << "Usage: " << argv[0] << " <input_file_path>\n";
     return; // Retorna 1 para o sistema
   }
+
+  filePath = argv[1];
+
   if (argc > 2) {
     if (!verify_args(argc, argv, gt, go, filePath)) {
       return;
@@ -52,245 +168,12 @@ void run(int argc, char const* argv[])
     std::unique_ptr<psr::Parser<char>> parser = CreateParser::create<char>(psr::ParserType::TXT);
     Graph<char> graph = parser->parse(filePath, go);
 
-    int option;
-    print_menu();
-    std::cout << "Digite a opção desejada: ";
-    std::cin >> option;
-    while (option != 0) {
-      print_menu();
-      switch (option) {
-        case 1:
-          graph.to_matrix();
-          std::cout << "Grafo em forma de " << graph.getRepresentation() << "\n";
-          break;
-        case 2:
-          graph.to_list();
-          std::cout << "Grafo em forma de " << graph.getRepresentation() << "\n";
-          break;
-        case 3:
-          graph.to_incMat();
-          std::cout << "Grafo em forma de " << graph.getRepresentation() << "\n";
-          break;
-        case 4:
-          std::cout << "Tamanho do grafo: " << graph.total_vertices() << "\n";
-          break;
-        case 5:
-          std::cout << "Quantidade de arestas: " << graph.total_edges() << "\n";
-          break;
-        case 6:
-          std::cout << "O grafo é conexo? " << (graph.is_conexo() ? "Sim" : "Não") << "\n";
-          break;
-        case 7:
-          std::cout << "O grafo é bipartido? " << (graph.is_bipartite() ? "Sim" : "Não") << "\n";
-          break;
-        case 8: {
-          char v1, v2;
-          std::cout << "Digite os dois vértices para verificar se são adjacentes (ex: A B): ";
-          std::cin >> v1 >> v2;
-          std::cout << "Os vértices " << v1 << " e " << v2 << " são adjacentes? "
-                    << (graph.is_adjacent(v1, v2) ? "Sim" : "Não") << "\n";
-          break;
-        }
-        case 9: {
-          std::cout << "Digite o vértice para verificar seu grau: ";
-          char vertex;
-          std::cin >> vertex;
-          int degree = graph.degree(vertex);
-          std::cout << "O grau do vértice " << vertex << " é: " << degree << "\n";
-          break;
-        }
-        case 10: {
-          std::cout << "Digite os vértices de origem e destino para adicionar uma aresta (ex: A B): ";
-          char origin, destiny;
-          std::cin >> origin >> destiny;
-          graph.add(origin, destiny);
-          break;
-        }
-        case 11: {
-          std::cout << "Digite os vértices de origem e destino para remover uma aresta (ex: A B): ";
-          char originR, destinyR;
-          std::cin >> originR >> destinyR;
-          graph.remove(originR, destinyR);
-          break;
-        }
-        case 12: {
-          std::cout << "Digite o vértice a ser adicionado: ";
-          char vertex;
-          std::cin >> vertex;
-          graph.add(vertex);
-          break;
-        }
-        case 13: {
-          std::cout << "Digite o vértice a ser removido: ";
-          char vertexR;
-          std::cin >> vertexR;
-          graph.remove(vertexR);
-          break;
-        }
-        case 14: {
-          std::cout << "Imprimindo o grafo em forma de " << graph.getRepresentation() << "\n";
-          graph.print();
-          break;
-        }
-        case 15: {
-          std::cout << "Digite o vértice de início para a busca em profundidade (DFS): ";
-          char startDFS;
-          std::cin >> startDFS;
-          std::cout << "Resultado da busca em profundidade (DFS) a partir do vértice " << startDFS << ": ";
-          graph.dfs(startDFS);
-          break;
-        }
-        case 16: {
-          std::cout << "Digite o vértice de início para a busca em largura (BFS): ";
-          char startBFS;
-          std::cin >> startBFS;
-          std::cout << "Resultado da busca em largura (BFS) a partir do vértice " << startBFS << ": ";
-          graph.bfs(startBFS);
-          break;
-        }
-        case 17: {
-          std::cout << "Digite o vértice de início para classificar as arestas usando DFS: ";
-          char startDFSClassify;
-          std::cin >> startDFSClassify;
-          std::cout << "Classificação das arestas a partir do vértice " << startDFSClassify << ": ";
-          graph.dfs_directed_classification(startDFSClassify);
-          break;
-        }
-        case 18: {
-          std::cout << "Articulações do grafo: ";
-          graph.find_articulations();
-          break;
-        }
-        default:
-          std::cout << "Opção inválida. Por favor, tente novamente.\n";
-          std::cin >> option;
-          continue;
-      }
-      print_menu();
-      std::cout << "Digite a opção desejada: ";
-      std::cin >> option;
-    }
+    interactive_menu(graph);
   } else {
     std::unique_ptr<psr::Parser<int>> parser = CreateParser::create<int>(psr::ParserType::TXT);
     Graph<int> graph = parser->parse(filePath, go);
-     int option;
-    print_menu();
-    std::cout << "Digite a opção desejada: ";
-    std::cin >> option;
-    while (option != 0) {
-      print_menu();
-      switch (option) {
-        case 1:
-          graph.to_matrix();
-          std::cout << "Grafo em forma de " << graph.getRepresentation() << "\n";
-          break;
-        case 2:
-          graph.to_list();
-          std::cout << "Grafo em forma de " << graph.getRepresentation() << "\n";
-          break;
-        case 3:
-          graph.to_incMat();
-          std::cout << "Grafo em forma de " << graph.getRepresentation() << "\n";
-          break;
-        case 4:
-          std::cout << "Tamanho do grafo: " << graph.total_vertices() << "\n";
-          break;
-        case 5:
-          std::cout << "Quantidade de arestas: " << graph.total_edges() << "\n";
-          break;
-        case 6:
-          std::cout << "O grafo é conexo? " << (graph.is_conexo() ? "Sim" : "Não") << "\n";
-          break;
-        case 7:
-          std::cout << "O grafo é bipartido? " << (graph.is_bipartite() ? "Sim" : "Não") << "\n";
-          break;
-        case 8: {
-          int v1, v2;
-          std::cout << "Digite os dois vértices para verificar se são adjacentes (ex: 1 2): ";
-          std::cin >> v1 >> v2;
-          std::cout << "Os vértices " << v1 << " e " << v2 << " são adjacentes? "
-                    << (graph.is_adjacent(v1, v2) ? "Sim" : "Não") << "\n";
-          break;
-        }
-        case 9: {
-          std::cout << "Digite o vértice para verificar seu grau: ";
-          int vertex;
-          std::cin >> vertex;
-          int degree = graph.degree(vertex);
-          std::cout << "O grau do vértice " << vertex << " é: " << degree << "\n";
-          break;
-        }
-        case 10: {
-          std::cout << "Digite os vértices de origem e destino para adicionar uma aresta (ex: 1 2): ";
-          int origin, destiny;
-          std::cin >> origin >> destiny;
-          graph.add(origin, destiny);
-          break;
-        }
-        case 11: {
-          std::cout << "Digite os vértices de origem e destino para remover uma aresta (ex: 1 2): ";
-          int originR, destinyR;
-          std::cin >> originR >> destinyR;
-          graph.remove(originR, destinyR);
-          break;
-        }
-        case 12: {
-          std::cout << "Digite o vértice a ser adicionado: ";
-          int vertex;
-          std::cin >> vertex;
-          graph.add(vertex);
-          break;
-        }
-        case 13: {
-          std::cout << "Digite o vértice a ser removido: ";
-          int vertexR;
-          std::cin >> vertexR;
-          graph.remove(vertexR);
-          break;
-        }
-        case 14: {
-          std::cout << "Imprimindo o grafo em forma de " << graph.getRepresentation() << "\n";
-          graph.print();
-          break;
-        }
-        case 15: {
-          std::cout << "Digite o vértice de início para a busca em profundidade (DFS): ";
-          int startDFS;
-          std::cin >> startDFS;
-          std::cout << "Resultado da busca em profundidade (DFS) a partir do vértice " << startDFS << ": ";
-          graph.dfs(startDFS);
-          break;
-        }
-        case 16: {
-          std::cout << "Digite o vértice de início para a busca em largura (BFS): ";
-          int startBFS;
-          std::cin >> startBFS;
-          std::cout << "Resultado da busca em largura (BFS) a partir do vértice " << startBFS << ": ";
-          graph.bfs(startBFS);
-          break;
-        }
-        case 17: {
-          std::cout << "Digite o vértice de início para classificar as arestas usando DFS: ";
-          int startDFSClassify;
-          std::cin >> startDFSClassify;
-          std::cout << "Classificação das arestas a partir do vértice " << startDFSClassify << ": ";
-          graph.dfs_directed_classification(startDFSClassify);
-          break;
-        }
-        case 18: {
-          std::cout << "Articulações do grafo: ";
-          graph.find_articulations();
-          break;
-        }
-        default:
-          std::cout << "Opção inválida. Por favor, tente novamente.\n";
-          std::cin >> option;
-          continue;
-      }
-      print_menu();
-      std::cout << "Digite a opção desejada: ";
-      std::cin >> option;
-    }
+
+    interactive_menu(graph);
   }
 }
 
