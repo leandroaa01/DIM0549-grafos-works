@@ -27,8 +27,8 @@ A (Para Grafos):
 | 6: Função que diz se dois vértices são adjacentes|       V         | Leandro |
 | 7: Função que diz o n⁰ total de vértices  |       V         | Leandro |
 | 8: Função que diz o n⁰ total de arestas   |       V         | Leandro |
-| 9: Inclusão de um novo vértice            |       V         | Leandro e Heitor |
-| 10: Exclusão de um vértice existente      |       V         | Leandro e Heitor |
+| 9: Inclusão de um novo vértice/aresta            |       V         | Leandro e Heitor |
+| 10: Exclusão de um vértice existente/aresta      |       V         | Leandro e Heitor |
 | 11: Função que diz se o grafo é conexo    |       V         | Leandro |
 | 12: Função que diz se o grafo é bipartido ***(OPC)*** |       V         | Leandro |
 | 13: Busca em Largura a partir de um vértice     |       V         | Heitor|
