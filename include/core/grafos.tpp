@@ -547,7 +547,7 @@ void Graph<T>::find_articulations(){
     std::vector<bool> is_articulation(m_vertices, false); //> Vetor booleano que marca se um vértice é uma articulação
     std::vector<std::pair<int, int>> stack_edges;         //> Pilha que guarda as arestas visitadas para formar os blocos biconexos
 
-    auto lowpt = [&](auto&& self, int u){   //> Função Lambda que executa a DFS e calcula o lowpt
+    auto lowpt = [&](auto&& self, int u) -> int {   //> Função Lambda que executa a DFS e calcula o lowpt
         dfn[u] = ++dfs_time;                //> Atribui o tempo de descoberta ao vértice u
         int lowest_vertex{u};               //> O menor vértice alcançável a partir de u (inicialmente é ele mesmo)
         int children{0};                    //> Conta quantos filhos u tem na árvore da DFS
@@ -600,7 +600,7 @@ void Graph<T>::find_articulations(){
     //> Garante que todos os componentes conexos sejam visitados
     for(int i{0}; i < m_vertices; ++i){
         if(!dfn[i]){ //> Se o vértice ainda não foi descoberto, inicia uma nova DFS a partir dele
-            lowpt(i);
+            lowpt(lowpt, i);
 
             //> Ao finalizar a DFS de uma componente, pode sobrar um bloco biconexo na raiz (caso ela não seja articulação)
             if(!stack_edges.empty()){
@@ -756,7 +756,7 @@ std::string Graph<T>::getRepresentation(){
             return "Lista de Adjacência";  //> Retorna a representação em formato de string
         break;
         case Representation::INCIDENCY_MATRIX:
-            return "Matriz de Adjacência"; //> Retorna a representação em formato de string
+            return "Matriz de Incidência"; //> Retorna a representação em formato de string
         break;
         default:
             std::cerr << "Erro: Representação inválida!" << std::endl; //> Caso a representação esteja inválida 

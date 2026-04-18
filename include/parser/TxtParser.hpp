@@ -24,7 +24,7 @@
 #include <utility>
 
 
-#include "../grafos.hpp"
+#include "../core/grafos.hpp"
 #include "GraphParser.hpp"
 
 namespace fs = std::filesystem;

@@ -12,7 +12,7 @@
 #define PARSER_HPP
 #pragma once
 
-#include "../grafos.hpp"
+#include "../core/grafos.hpp"
 
 namespace psr {
 
