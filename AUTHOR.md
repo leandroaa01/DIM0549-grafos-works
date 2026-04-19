@@ -58,6 +58,7 @@ B (Para Digrafos):
 
 ```bash
 git clone https://github.com/leandroaa01/DIM0549-grafos-works.git
+cd DIM0549-grafos-works/
 ```
 
 2. Gere os arquivos de build com o CMake:
@@ -80,7 +81,7 @@ cmake --build build
 4. Execute o programa:
 
 ```bash
-./build/grafos <caminho-do-arquivo> [opções]
+./bin/grafos <caminho-do-arquivo> [opções]
 ```
 
 onde: 
@@ -97,7 +98,7 @@ onde:
 
 **Exemplo de uso:**
 ```bash
- ./build/grafos entrada.txt -c -d  
+ ./bin/grafos entrada.txt -c -d  
  #(Lê o arquivo entrada.txt, com vértices do tipo char, formatado como um grafo direcionado).
  ```
 

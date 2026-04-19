@@ -468,6 +468,7 @@ std::vector<T> Graph<T>::bfs(T start_vertex){
         int v = q.front();                                 //> Chama o topo da fila de "v"
         q.pop();
         visit_order.push_back(get_vertex_label(v));  //> Adiciona o vértice v na ordem de encontro
+        std::cout << "Visitando o vértice: " << get_vertex_label(v) << '\n';
 
         for(auto& neightbor : m_list[v]){                   //> Visita os vizinhos do vértice v
             int w = get_vertex_index(neightbor, false);
@@ -483,6 +484,8 @@ template <typename T>
 void Graph<T>::dfs_rec(int index, std::vector<T>& visit_order, std::vector<bool>& visited){
     visited[index] = true;                          //> Marca o vértice como visitado
     visit_order.push_back(get_vertex_label(index)); //> Adiciona o vértice no vector de ordem
+
+    std::cout << "Visitando o vértice: " << get_vertex_label(index) << '\n';
 
     for(auto& neightbor : m_list[index]){
         int w = get_vertex_index(neightbor, false);
@@ -537,8 +540,10 @@ bool Graph<T>::is_conexo() {
 }
 template <typename T>
 void Graph<T>::find_articulations(){
-    if(is_targeted) return; //> Não faz sentido encontrar articulações em Dígrafos neste contexto
-
+    if(is_targeted) {
+        std::cerr << "Erro: Grafos direcionados não possuem articulação.\n";
+        return; //> Não faz sentido encontrar articulações em Dígrafos neste contexto
+    }
     this->to_list(); //> Otimização: realizar a busca em uma lista de adjacência é mais rápido que nas matrizes de adjacência e incidência
 
     int dfs_time{0};                                      //> Contador da ordem de acesso dos vértices
@@ -582,12 +587,12 @@ void Graph<T>::find_articulations(){
                 if((parent[u] == -1 && children > 1) || (parent[u] != -1 && dfn[child_lowest_vertex] >= dfn[u])){
                     is_articulation[u] = true; //> Marca u como ponto de articulação.
 
-                    std::cout << "Bloco Biconexo: ";
+                    std::cout << "Bloco Biconexo: \n";
                     //> Desempilha as arestas até encontrar a aresta (u, v) que causou a articulação
                     while (true) {
                         auto edge = stack_edges.back();
                         stack_edges.pop_back();
-                        std::cout << "(" << get_vertex_label(edge.first) << ", " << get_vertex_label(edge.second) << ") ";
+                        std::cout << "(" << get_vertex_label(edge.first) << ", " << get_vertex_label(edge.second) << ")\n";
                         if (edge.first == u && edge.second == v) break; //> Para ao remover a raiz deste bloco
                     }
                     std::cout << '\n';
@@ -680,7 +685,10 @@ bool Graph<T>::is_bipartite() {
 
 template <typename T>
 void Graph<T>::dfs_directed_classification(T start_vertex) {
-    if (!is_targeted) return; //> Apenas classificar cada um em Grafos não direcionados. 
+    if (!is_targeted){ //> Apenas classificar cada um em Grafos não direcionados.
+        std::cerr << "Erro: Não tem como classificar em um grafo não direcionado\n";
+        return;  
+    } 
 
     int start_index = get_vertex_index(start_vertex, false);
     if (start_index == -1) {                                        //> Caso o vértice não seja encontrado, acaba a função

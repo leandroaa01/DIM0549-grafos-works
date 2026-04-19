@@ -15,7 +15,7 @@ using raw_str = const char*;
 using str = std::string;
 
 inline raw_str MENU_OPCOES = R"(  
-Slecione a opção que deseja utilizar:
+Selecione a opção que deseja utilizar:
     1 - Usar matriz de adjacências
     2 - Usar lista de adjacências
     3 - Usar matriz de incidências
@@ -49,6 +49,7 @@ void interactive_menu(Graph<T>& graph)
     T v{};
     std::cout << prompt;
     std::cin >> v;
+    std::cout << '\n';
     return v;
   };
 
@@ -108,21 +109,21 @@ void interactive_menu(Graph<T>& graph)
   };
   actions[15] = [&] {
     T start = read_vertex("Digite o vértice de início para a busca em profundidade (DFS): ");
-    std::cout << "Resultado da busca em profundidade (DFS) a partir do vértice " << start << ": ";
+    std::cout << "Resultado da busca em profundidade (DFS) a partir do vértice " << start << ": \n";
     graph.dfs(start);
   };
   actions[16] = [&] {
     T start = read_vertex("Digite o vértice de início para a busca em largura (BFS): ");
-    std::cout << "Resultado da busca em largura (BFS) a partir do vértice " << start << ": ";
+    std::cout << "Resultado da busca em largura (BFS) a partir do vértice " << start << ": \n";
     graph.bfs(start);
   };
   actions[17] = [&] {
     T start = read_vertex("Digite o vértice de início para classificar as arestas usando DFS: ");
-    std::cout << "Classificação das arestas a partir do vértice " << start << ": ";
+    std::cout << "Classificação das arestas a partir do vértice " << start << ": \n";
     graph.dfs_directed_classification(start);
   };
   actions[18] = [&] {
-    std::cout << "Articulações do grafo: ";
+    std::cout << "Articulações do grafo: \n";
     graph.find_articulations();
   };
 
