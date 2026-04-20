@@ -1,8 +1,6 @@
 #ifndef TXT_PARSER_TPP
 #define TXT_PARSER_TPP
 
-
-
 #pragma once
 
 #include "TxtParser.hpp"

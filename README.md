@@ -2,6 +2,10 @@
 
 Este projeto implementa algoritmos de grafos em C++.
 
+## Vídeo da documentação
+
+Link: https://youtu.be/O-mE7CxTU-Y
+
 ## Requisitos
 
 - CMake >= 3.10

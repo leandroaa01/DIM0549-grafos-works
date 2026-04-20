@@ -37,7 +37,7 @@ enum class Representation { //> Enum que guarda todas as possíveis representaç
 
 /**
  * @brief Classe que representa um grafo
- * O grafo pode ser representado tanto por uma matriz de adjacências quanto por uma lista de adjacências. 
+ * O grafo pode ser representado tanto por uma matriz de adjacências quanto por uma lista de adjacências quanto matriz de incidência. 
  * A classe possui métodos para converter entre as duas representações, adicionar e remover arestas, e imprimir o grafo...    
  * @tparam Type O tipo dos vértices do grafo 
  */
@@ -173,7 +173,6 @@ public:
       * @param start_vertex representa o vértice "raiz" da busca
       */
     void dfs_directed_classification(Type start_vertex);
-
 
     void find_articulations(); //> Encontra todas as articulações do grafo e printa no terminal
 
