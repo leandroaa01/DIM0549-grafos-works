@@ -1,8 +1,11 @@
 
 int (quantidade de vértices)
-bool (flag se é direcionado ou não (1 ou 0), opcional) 
+bool (flag se é direcionado ou não (1 ou 0), opcional)
+bool  (flag se é com custo ou não  (1 ou 0), opcional)
 
-aresta1 (aresta no estilo: "vertice,vertice")
+aresta1.1 (aresta no estilo: "vertice,vertice") para grafos sem custo
+aresta1.2 (aresta no estilo: "vertice,vertice,custo") para grafos com custo
+
 aresta2
 ...
 arestan

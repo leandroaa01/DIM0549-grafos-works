@@ -1,0 +1,14 @@
+5
+0
+#Diz se o grafos tem custo o não
+1
+A,B,15
+A,D,17
+B,C,0
+A,E,86
+A,C,85
+B,D,20
+B,E,86
+C,D,17
+C,E,90
+D,E,23
