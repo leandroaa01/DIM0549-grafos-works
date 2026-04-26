@@ -1,7 +1,9 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
+#include <functional>
 #include <vector>
 #ifndef GRAPH_TPP
 #define GRAPH_TPP
@@ -48,17 +50,17 @@ void Graph<T>::to_list() {
 
     if(graphRep == rep::ADJACENCY_MATRIX){
         for (int i = 0; i < m_vertices; ++i) {
+            T origin_label = get_vertex_label(i);
             for (int j = 0; j < m_vertices; ++j) {
-                if (m_matrix[i][j] != 0) {
-                    //> Encontra o rótulo do vértice j correspondente ao índice j
-                    auto neighbor = std::find_if(m_vertex_index.begin(), m_vertex_index.end(), [j](const auto& pair) {
-                        return pair.second == j;
-                    });
-                    //> Se o rótulo do vértice j for encontrado, adiciona-o à lista de adjacências do vértice i
-                    if (neighbor != m_vertex_index.end()) {
-                        m_list[i].push_back(neighbor->first);
-                    }
-                }
+                if (m_matrix[i][j] == 0) { continue; }
+
+                auto neighbor = std::find_if(m_vertex_index.begin(), m_vertex_index.end(), [j](const auto& pair) {
+                    return pair.second == j;
+                });
+                if (neighbor == m_vertex_index.end()) { continue; }
+
+                int edge_cost = m_weighted ? m_matrix[i][j] : 0;
+                m_list[i].push_back(Edge<T>{origin_label, neighbor->first, edge_cost});
             }
         }
     }
@@ -66,30 +68,26 @@ void Graph<T>::to_list() {
         for (int e{0}; e < m_edges; ++e) {
             int origin{-1}, destiny{-1};
             for (int i{0}; i < m_vertices; ++i) {
-                if (m_inc_matrix[i][e] == -1) {     //> Define origem como o vértice que possui -1
-                    origin = i;
-                } else if (m_inc_matrix[i][e] == 1) {
-                    if(is_targeted){                //> Caso seja direcionado, define o destino como o vértice que possui 1
-                        destiny = i;
-                    }else{
-                        if(origin == -1){       //> Caso não seja direcionado, define o primeiro vértice que possui 1 como origem, e o seguindo como destino
-                            origin = i;
-                        }
-                        else{
-                            destiny = i;
-                        }
+                if (is_targeted) {
+                    if (m_inc_matrix[i][e] == 1) origin = i;
+                    else if (m_inc_matrix[i][e] == -1) destiny = i;
+                } else {
+                    if (m_inc_matrix[i][e] == 1) {
+                        if (origin == -1) origin = i;
+                        else destiny = i;
                     }
                 }
             }
-            if (origin != -1 && destiny != -1) {                                                       //> Caso direcionado
-                auto label_dest = std::find_if(m_vertex_index.begin(), m_vertex_index.end(), [destiny](const auto& pair) { return pair.second == destiny; });
-                if (label_dest != m_vertex_index.end()) m_list[origin].push_back(label_dest->first);   
-                                                                                                       //> Caso ache um par de origem e destino, adiciona à lista
-                                                                                                       //> de adjacências
 
-                if (!is_targeted) {                                                                    //> Caso não direcionado
-                    auto label_orig = std::find_if(m_vertex_index.begin(), m_vertex_index.end(), [origin](const auto& pair) { return pair.second == origin; });
-                    if (label_orig != m_vertex_index.end()) m_list[destiny].push_back(label_orig->first);
+            if (origin != -1 && destiny != -1) {
+                T origin_label = get_vertex_label(origin);
+                T destiny_label = get_vertex_label(destiny);
+                int edge_cost = (m_weighted && e < static_cast<int>(m_edge_costs.size())) ? m_edge_costs[e] : 0;
+
+                m_list[origin].push_back(Edge<T>{origin_label, destiny_label, edge_cost});
+
+                if (!is_targeted) {
+                    m_list[destiny].push_back(Edge<T>{destiny_label, origin_label, edge_cost});
                 }
             }
         }
@@ -103,16 +101,22 @@ void Graph<T>::to_matrix() {
     if (graphRep == rep::ADJACENCY_MATRIX) { return;  } //> Se o grafo já estiver usando matriz de adjacências, não é necessário converter
     if (graphRep != rep::ADJACENCY_LIST) {this->to_list();} //> Para garantir eficiência, utiliza a forma de lista como um pivô
     m_matrix.clear(); //> Limpa a matriz de adjacências antes de preenchê-la
-    m_matrix.resize(m_vertices, std::vector<int>(m_vertices, 0)); //> Redimensiona a matriz de adjacências para o número de vértices, inicializando com zeros
+    m_matrix.resize(m_vertices, std::vector<int>(m_vertices, 0)); //> 0 = sem aresta
 
     if(graphRep == rep::ADJACENCY_LIST){
         //> Converte de lista de adjacências para matriz de adjacências
         for (int i = 0; i < m_vertices; ++i) {
-            for (const auto& neighbor : m_list[i]) {
-                auto neighbor_index = get_vertex_index(neighbor, false); //> Obtém o índice do vértice vizinho sem criar um novo vértice
-                if (neighbor_index >= 0) {
-                    m_matrix[i][neighbor_index] = 1;
+            for (const auto& edge : m_list[i]) {
+                auto neighbor_index = get_vertex_index(edge.destiny, false); //> Obtém o índice do vértice vizinho sem criar um novo vértice
+                if (neighbor_index < 0) { continue; }
+
+                int value = m_weighted ? edge.cost : 1;
+                if (m_weighted && value < 1) {
+                    std::cerr << "Error: edge cost must be >= 1 in weighted graphs." << std::endl;
+                    continue;
                 }
+
+                m_matrix[i][neighbor_index] = value;
             }
         }
     }
@@ -124,26 +128,30 @@ void Graph<T>::to_incMat(){
     if(graphRep == rep::INCIDENCY_MATRIX){ return; }
     if(graphRep != rep::ADJACENCY_LIST)  {this->to_list();}
     
-    m_inc_matrix.clear();
-    m_inc_matrix.resize(m_vertices, std::vector<int>(m_edges, 0));
+    m_inc_matrix.assign(m_vertices, std::vector<int>{});
+    m_edge_costs.clear();
 
-    int edge{0}; //> Variável que guarda o indice de cada aresta da matriz dentro do loop
-
-    std::vector<std::vector<bool>> visited(m_vertices, std::vector<bool>(m_vertices, false)); //> Matriz de booleanos que verifica se cada aresta foi vista.
+    std::vector<std::vector<bool>> visited(m_vertices, std::vector<bool>(m_vertices, false));
 
     for(int i{0}; i < m_vertices; ++i){
-        for(const auto& neighbor : m_list[i]){
-            int index = get_vertex_index(neighbor, false);
-            if(!is_targeted && visited[index][i])continue;  //> Caso não seja direcionado, evitar contar a mesma aresta 2 vezes.
-            if(edge < m_edges){             
-                m_inc_matrix[i][edge] = 1;
-                m_inc_matrix[index][edge] = is_targeted ? -1 : 1; //> Caso seja direcionado, o vértice de saída fica como -1
-                visited[i][index] = true;
-                ++edge;
-            }
+        for(const auto& edge : m_list[i]){
+            int index = get_vertex_index(edge.destiny, false);
+            if(index < 0) continue;
+            if(!is_targeted && visited[index][i]) continue;  //> Evita contar a mesma aresta 2 vezes (não-direcionado)
 
+            for(int r{0}; r < m_vertices; ++r){
+                m_inc_matrix[r].push_back(0);
+            }
+            int col = static_cast<int>(m_edge_costs.size());
+            m_inc_matrix[i][col] = 1;
+            m_inc_matrix[index][col] = is_targeted ? -1 : 1; //> Dígrafo: destino = -1
+            m_edge_costs.push_back(m_weighted ? edge.cost : 0);
+
+            visited[i][index] = true;
         }
     }
+
+    m_edges = static_cast<int>(m_edge_costs.size());
     graphRep = rep::INCIDENCY_MATRIX;
 }
 template <typename T>
@@ -157,7 +165,7 @@ void Graph<T>::add(T vertex) {
     }
     m_matrix.push_back(std::vector<int>(m_vertices, 0)); //> Adiciona 1 coluna a mais na matriz de adjacência
 
-    m_list.push_back(std::list<T>()); //> Adiciona a lista do vértice "vertex" na lista de adjacência
+    m_list.push_back(std::list<Edge<T>>()); //> Adiciona a lista do vértice "vertex" na lista de adjacência
 
     if (!m_inc_matrix.empty()) {        //> Caso a matriz de incidência já tenha sido criada:
         int current_edges = m_inc_matrix[0].size();     //> Adiciona uma linha a mais para representar o novo vértice 
@@ -169,48 +177,90 @@ void Graph<T>::add(T vertex) {
 
 template <typename T>
 void Graph<T>::add(T origin, T destiny) {
-    int origin_index = get_vertex_index(origin); //> Obtém o índice do vértice de origem, criando-o se necessário
-    int destiny_index = get_vertex_index(destiny); //> Obtém o índice do vértice de destino, criando-o se necessário
+    add(origin, destiny, 0);
+}
 
-     if (origin_index < 0 or destiny_index < 0) {   //> Caso não ache algum dos vértices, não faz nada
+template <typename T>
+void Graph<T>::add(T origin, T destiny, int cost) {
+    if ( not m_weighted)  { cost = 0; } //> Se o grafo não for ponderado, ignora o custo recebido (cost=0)
+
+    int origin_index = get_vertex_index(origin);
+    int destiny_index = get_vertex_index(destiny);
+
+    if (origin_index < 0 or destiny_index < 0) {
         std::cerr << "Error: vertex index out of bounds." << std::endl;
         return;
     }
-    bool edge_exists = false;       //> Flag que diz se a aresta existe no grafo
-    if (graphRep == rep::ADJACENCY_LIST) {  //> Caso seja representado por lista de adjacência, verifica se ele está na
-        edge_exists = std::find(m_list[origin_index].begin(), m_list[origin_index].end(), destiny) != m_list[origin_index].end();
-    } else if(graphRep == rep::ADJACENCY_MATRIX) { //> Caso seja uma matriz de adjecência, verifica se a posiçao [o][d] possui valor igual a 1
-        if (m_matrix[origin_index][destiny_index] == 1) edge_exists = true;
-    }
-    else{
-        for(int j{0}; j < m_edges; ++j){ //> Verifica se os dois vértices de origem e destino possuem uma conexão E_j
-            if(m_inc_matrix[origin_index][j] != 0 && m_inc_matrix[destiny_index][j] != 0){
-                edge_exists = true;
-                break;
+
+    bool edge_exists = false;
+
+    if (graphRep == rep::ADJACENCY_LIST) {
+        auto it = std::find_if(m_list[origin_index].begin(), m_list[origin_index].end(), [&](const Edge<T>& e){
+            return e.destiny == destiny;
+        });
+        edge_exists = (it != m_list[origin_index].end());
+
+        if (edge_exists) {
+            if (m_weighted) it->cost = cost;
+            if (!is_targeted && origin != destiny) {
+                auto it2 = std::find_if(m_list[destiny_index].begin(), m_list[destiny_index].end(), [&](const Edge<T>& e){
+                    return e.destiny == origin;
+                });
+                if (it2 != m_list[destiny_index].end() && m_weighted) it2->cost = cost;
             }
-        }
-    }
-
-    if (not edge_exists) {
-        m_edges++; //> Incrementa o contador de arestas do grafo apenas se a aresta não existir
-    }
-
-     if (graphRep == rep::ADJACENCY_LIST) {
-        m_list[origin_index].push_back(destiny); //> Adiciona o vértice de destino à lista de adjacências do vértice de origem
-        if( not is_targeted){
-             m_list[destiny_index].push_back(origin); //> Adiciona o vértice de origem à lista de adjacências do vértice de destino (grafo não direcionado)
+            return;
         }
     } else if(graphRep == rep::ADJACENCY_MATRIX) {
-        m_matrix[origin_index][destiny_index] = 1; //> Marca a presença da aresta na matriz de adjacências
-            if( not is_targeted){
-                m_matrix[destiny_index][origin_index] = 1; //> Marca a presença da aresta na matriz de adjacências (grafo não direcionado)
+        edge_exists = (m_matrix[origin_index][destiny_index] != 0);
+        if (edge_exists) {
+            m_matrix[origin_index][destiny_index] = m_weighted ? cost : 1;
+            if (!is_targeted) {
+                m_matrix[destiny_index][origin_index] = m_weighted ? cost : 1;
             }
-    }else {
-        for(int i{0}; i < m_vertices; ++i){
-            m_inc_matrix[i].push_back(0);   //> Cria uma nova coluna na matriz de incidências
+            return;
         }
-        m_inc_matrix[origin_index][m_edges - 1] = 1; //> Adiciona o vertice de origem da aresta
-        m_inc_matrix[destiny_index][m_edges - 1]  = is_targeted ? -1 : 1; //> Adiciona o vertice de destino da aresta
+    }
+    else {
+        for(int j{0}; j < m_edges; ++j){
+            if (is_targeted) {
+                if(m_inc_matrix[origin_index][j] == 1 && m_inc_matrix[destiny_index][j] == -1){
+                    edge_exists = true;
+                    if (m_weighted && j < static_cast<int>(m_edge_costs.size())) m_edge_costs[j] = cost;
+                    break;
+                }
+            } else {
+                if(m_inc_matrix[origin_index][j] == 1 && m_inc_matrix[destiny_index][j] == 1){
+                    edge_exists = true;
+                    if (m_weighted && j < static_cast<int>(m_edge_costs.size())) m_edge_costs[j] = cost;
+                    break;
+                }
+            }
+        }
+        if (edge_exists) { return; }
+    }
+
+    m_edges++;
+
+    if (graphRep == rep::ADJACENCY_LIST) {
+        m_list[origin_index].push_back(Edge<T>{origin, destiny, cost});
+        if (!is_targeted && origin != destiny) {
+            m_list[destiny_index].push_back(Edge<T>{destiny, origin, cost});
+        }
+    } else if(graphRep == rep::ADJACENCY_MATRIX) {
+        m_matrix[origin_index][destiny_index] = m_weighted ? cost : 1;
+        if (!is_targeted) {
+            m_matrix[destiny_index][origin_index] = m_weighted ? cost : 1;
+        }
+    } else {
+        if (m_inc_matrix.empty()) {
+            m_inc_matrix.assign(m_vertices, std::vector<int>{});
+        }
+        for(int i{0}; i < m_vertices; ++i){
+            m_inc_matrix[i].push_back(0);
+        }
+        m_inc_matrix[origin_index][m_edges - 1] = 1;
+        m_inc_matrix[destiny_index][m_edges - 1]  = is_targeted ? -1 : 1;
+        if (static_cast<int>(m_edge_costs.size()) < m_edges) m_edge_costs.push_back(m_weighted ? cost : 0);
     }
 }
 
@@ -227,28 +277,41 @@ void Graph<T>::remove(T vertex){
 
     int edges_removed = 0; //> Contador de arestas removidas
     
-    if (graphRep == rep::ADJACENCY_LIST && !m_list.empty()) { //> Caso seja uma lista de adjacência não vazia:
-        for(auto& adj_list : m_list){
-            edges_removed += std::count(adj_list.begin(), adj_list.end(), vertex); //> Soma a quantidade de arestas removidas
-        }
-        if (is_targeted) { //> caso seja direcionada:
-            edges_removed += m_list[vertex_index].size(); //> Adiciona o resto das arestas faltantes
-            if(std::find(m_list[vertex_index].begin(), m_list[vertex_index].end(), vertex) != m_list[vertex_index].end()){
-                edges_removed--;    //> Caso não encontre a lista de adjacência do vértice, decrementa (não contar arestas de origem e destino iguais)
+    if (graphRep == rep::ADJACENCY_LIST && !m_list.empty()) {
+        if (!is_targeted) {
+            edges_removed = static_cast<int>(m_list[vertex_index].size());
+        } else {
+            for(auto& adj_list : m_list){
+                edges_removed += static_cast<int>(std::count_if(adj_list.begin(), adj_list.end(), [&](const Edge<T>& e){
+                    return e.destiny == vertex;
+                }));
             }
+            edges_removed += static_cast<int>(m_list[vertex_index].size());
+
+            bool has_self_loop = std::any_of(m_list[vertex_index].begin(), m_list[vertex_index].end(), [&](const Edge<T>& e){
+                return e.destiny == vertex;
+            });
+            if (has_self_loop) edges_removed--;
         }
-        
-    } 
+    }
     else if (graphRep == rep::ADJACENCY_MATRIX && !m_matrix.empty()) { //> Caso seja uma matriz de adjacência não vazia:
-        for (int i = 0; i < m_vertices; ++i) { 
-            if (m_matrix[i][vertex_index] != 0) edges_removed++; //> Adiciona a quantidade de 1 (representa uma ligação entre dois vértices) na quantidade de 
-                                                                 //> arestas removidas
-        }
-        if (is_targeted) {                                       //> Caso seja direcionado:
+        if (!is_targeted) {
             for (int j = 0; j < m_vertices; ++j) {
-                if (m_matrix[vertex_index][j] != 0) edges_removed++; //> Adiciona o resto das arestas faltantes
+                if (m_matrix[vertex_index][j] != 0) edges_removed++;
             }
-            if(m_matrix[vertex_index][vertex_index] != 0)edges_removed--; //> Caso encontre uma aresta que começa e termina em vertex, decrementa.
+        } else {
+            for (int i = 0; i < m_vertices; ++i) {
+                if (m_matrix[i][vertex_index] != 0) edges_removed++;
+            }
+            for (int j = 0; j < m_vertices; ++j) {
+                if (m_matrix[vertex_index][j] != 0) edges_removed++;
+            }
+            if(m_matrix[vertex_index][vertex_index] != 0) edges_removed--;
+        }
+    }
+    else if (graphRep == rep::INCIDENCY_MATRIX && !m_inc_matrix.empty()) {
+        for (int e{0}; e < m_edges; ++e) {
+            if (m_inc_matrix[vertex_index][e] != 0) edges_removed++;
         }
     }
     
@@ -282,7 +345,7 @@ void Graph<T>::remove(T vertex){
     if (!m_list.empty()) { //> Após a troca, remove a última lista e todas as aparições do vértice removido das outras listas
         m_list.pop_back();
         for(auto& adj_list : m_list){
-            adj_list.remove(vertex);
+            adj_list.remove_if([&](const Edge<T>& e){ return e.destiny == vertex; });
         }
     }
     if(!m_inc_matrix.empty()){  //> Caso a matriz de incidência exista (já tiver sido criada)
@@ -295,9 +358,15 @@ void Graph<T>::remove(T vertex){
                     for(int i{0}; i < m_vertices; ++i){
                         std::swap(m_inc_matrix[i][col], m_inc_matrix[i][last_col]); //> Troca a coluna da conexão pela última coluna da matriz
                     }
+                    if (!m_edge_costs.empty() && col < static_cast<int>(m_edge_costs.size()) && last_col < static_cast<int>(m_edge_costs.size())) {
+                        std::swap(m_edge_costs[col], m_edge_costs[last_col]);
+                    }
                 }
                 for(int i{0}; i < m_vertices; ++i){         //> Remove a última coluna da matriz
                     m_inc_matrix[i].pop_back();
+                }
+                if (!m_edge_costs.empty()) {
+                    m_edge_costs.pop_back();
                 }
                 if (graphRep == rep::INCIDENCY_MATRIX) m_edges--; //> Caso seja uma matriz de incidência, decrementa a quantidade de arestas
             }
@@ -323,12 +392,17 @@ void Graph<T>::remove(T origin, T destiny) {
         return;
     }
 
+    bool removed = false;
+
     if (graphRep == rep::ADJACENCY_LIST) {
-        m_list[origin_index].remove(destiny); //> Remove o vértice de destino da lista de adjacências do vértice de origem
-        if(!is_targeted){
-            m_list[destiny_index].remove(origin);
+        auto before = m_list[origin_index].size();
+        m_list[origin_index].remove_if([&](const Edge<T>& e){ return e.destiny == destiny; });
+        removed = (m_list[origin_index].size() != before);
+        if(!is_targeted && origin != destiny){
+            m_list[destiny_index].remove_if([&](const Edge<T>& e){ return e.destiny == origin; });
         }
     } else if(graphRep == rep::ADJACENCY_MATRIX){
+        removed = (m_matrix[origin_index][destiny_index] != 0);
         m_matrix[origin_index][destiny_index] = 0;
         if(!is_targeted){
             m_matrix[destiny_index][origin_index] = 0;
@@ -336,14 +410,35 @@ void Graph<T>::remove(T origin, T destiny) {
     }
     else{
         for(int e{0}; e < m_edges; ++e){
-            if(m_inc_matrix[origin_index][e] == 1 && m_inc_matrix[destiny_index][e] == (is_targeted ? -1 : 1)){
-                for(int i{0}; i < m_vertices; i++){
-                    m_inc_matrix[i][e] = m_inc_matrix[i].back();
-                    m_inc_matrix.pop_back();
+            bool match = false;
+            if (is_targeted) {
+                match = (m_inc_matrix[origin_index][e] == 1 && m_inc_matrix[destiny_index][e] == -1);
+            } else {
+                match = (m_inc_matrix[origin_index][e] == 1 && m_inc_matrix[destiny_index][e] == 1);
+            }
+            if(match){
+                int last = m_edges - 1;
+                if (e != last) {
+                    for(int i{0}; i < m_vertices; ++i){
+                        std::swap(m_inc_matrix[i][e], m_inc_matrix[i][last]);
+                    }
+                    if (e < static_cast<int>(m_edge_costs.size()) && last < static_cast<int>(m_edge_costs.size())) {
+                        std::swap(m_edge_costs[e], m_edge_costs[last]);
+                    }
                 }
+                for(int i{0}; i < m_vertices; ++i){
+                    m_inc_matrix[i].pop_back();
+                }
+                if (!m_edge_costs.empty()) m_edge_costs.pop_back();
+                removed = true;
                 break;
             }
         }
+    }
+
+    if (!removed) {
+        std::cerr << "Error: edge not found." << std::endl;
+        return;
     }
 
     m_edges--; //> Decrementa o contador de arestas do grafo
@@ -363,8 +458,12 @@ void Graph<T>::print() const {
             } else {
                 std::cout << "[ ? ]: ";
             }
-            for (const auto& neighbor : m_list[i]) {
-                std::cout << neighbor << ", ";
+            for (const auto& edge : m_list[i]) {
+                if (m_weighted) {
+                    std::cout << edge.destiny << "(" << edge.cost << ")" << ", ";
+                } else {
+                    std::cout << edge.destiny << ", ";
+                }
             }
             std::cout << "}";
 
@@ -470,8 +569,8 @@ std::vector<T> Graph<T>::bfs(T start_vertex){
         visit_order.push_back(get_vertex_label(v));  //> Adiciona o vértice v na ordem de encontro
         std::cout << "Visitando o vértice: " << get_vertex_label(v) << '\n';
 
-        for(auto& neightbor : m_list[v]){                   //> Visita os vizinhos do vértice v
-            int w = get_vertex_index(neightbor, false);
+        for(auto& edge : m_list[v]){                   //> Visita os vizinhos do vértice v
+            int w = get_vertex_index(edge.destiny, false);
             if(w != -1 && !visited[w]){                     //> Caso o vizinho não tenha sido visitado, visita e coloca na fila
                 visited[w] = true;              
                 q.push(w);
@@ -487,8 +586,8 @@ void Graph<T>::dfs_rec(int index, std::vector<T>& visit_order, std::vector<bool>
 
     std::cout << "Visitando o vértice: " << get_vertex_label(index) << '\n';
 
-    for(auto& neightbor : m_list[index]){
-        int w = get_vertex_index(neightbor, false);
+    for(auto& edge : m_list[index]){
+        int w = get_vertex_index(edge.destiny, false);
         if(w != -1 && !visited[w]){                         //> Se o vizinho não for visitado
             dfs_rec(w, visit_order, visited);   //> Chamada recursiva para o vizinho
         }
@@ -497,7 +596,7 @@ void Graph<T>::dfs_rec(int index, std::vector<T>& visit_order, std::vector<bool>
 template <typename T>
 std::vector<T> Graph<T>::dfs(T start_vertex){   
     std::vector<T> visit_order;                             //> Vetor que guarda a ordem em que cada vértice foi visitado
-    int start_index = get_vertex_index(start_vertex);
+    int start_index = get_vertex_index(start_vertex, false);
     if(start_index == -1)return visit_order;                //> Caso o vértice não seja encontrado, retorna um vetor vazio
 
     this->to_list();    //> Otimização: realizar a busca em uma lista de adjacência é mais rápido que as matrizes de adjacência e incidência  
@@ -557,8 +656,8 @@ void Graph<T>::find_articulations(){
         int lowest_vertex{u};               //> O menor vértice alcançável a partir de u (inicialmente é ele mesmo)
         int children{0};                    //> Conta quantos filhos u tem na árvore da DFS
 
-        for(auto& neighbor : m_list[u]){
-            int v = get_vertex_index(neighbor, false);  //> Obtém o índice do vizinho v
+        for(auto& edge : m_list[u]){
+            int v = get_vertex_index(edge.destiny, false);  //> Obtém o índice do vizinho v
             if(v == -1 || v == parent[u]) continue;     //> Ignora se for inválido ou se for a aresta que volta diretamente para o pai
 
             //> CASO 1: v já foi visitado e tem um tempo menor que u (Encontramos uma Aresta de Retorno)
@@ -712,8 +811,8 @@ void Graph<T>::dfs_directed_classification(T start_vertex) {
         discovery_time[u] = time;
         color[u] = Color::GRAY; //> Vértice descoberto, mas ainda visitando vizinhos
 
-        for (const auto& neighbor : m_list[u]) {
-            int v = get_vertex_index(neighbor, false);
+        for (const auto& edge : m_list[u]) {
+            int v = get_vertex_index(edge.destiny, false);
             if (v == -1) continue;
 
             std::cout << "Aresta (" << get_vertex_label(u) << " -> " << get_vertex_label(v) << "): ";
@@ -772,4 +871,115 @@ std::string Graph<T>::getRepresentation(){
             return "";
     }
 }
+template<typename T>
+bool Graph<T>::has_cycle(){
+    //> Usa matriz de adjacência como base
+    if (graphRep != rep::ADJACENCY_MATRIX) { to_matrix(); }
+
+    if (is_targeted) {
+        enum class Color { WHITE, GRAY, BLACK }; //> Enum para classificar os vértices durante a DFS: WHITE (não visitado), GRAY (visitando), BLACK (finalizado)
+        std::vector<Color> color(m_vertices, Color::WHITE);
+
+        //função recursiva auxiliar (lambda) para realizar a DFS e detectar ciclos
+        std::function<bool(int)> dfs = [&](int u) -> bool {
+            color[u] = Color::GRAY; //> Marca o vértice como visitando
+            for (int v = 0; v < m_vertices; ++v) {
+                if (m_matrix[u][v] == 0) continue; //> Ignora se não houver aresta entre u e v
+                if (color[v] == Color::GRAY) return true;      //> aresta de retorno
+                if (color[v] == Color::WHITE && dfs(v)) return true; //> aresta de árvore 
+            }
+            color[u] = Color::BLACK; //> Marca o vértice como finalizado
+            return false; //> Não encontrou ciclo a partir deste vértice
+        };
+
+        //> Inicia a DFS para cada vértice não visitado
+        for (int i = 0; i < m_vertices; ++i) {
+            if (color[i] == Color::WHITE && dfs(i)) return true;
+        }
+        return false; //> Se passou por todos os vértices sem encontrar ciclo, retorna falso
+    }
+
+    //> Não direcionado: BFS/DFS com controle de pai
+    std::vector<int> visited(m_vertices, 0); //> Vetor para marcar os vértices visitados durante a busca
+    std::vector<int> parent(m_vertices, -1);//> Vetor para guardar o pai de cada vértice na busca
+    std::queue<int> q;
+
+    for (int start = 0; start < m_vertices; ++start) {
+        if (visited[start]) continue; //> Se já foi visitado, ignora
+
+        visited[start] = 1; //> Marca o vértice inicial como visitado
+        parent[start] = -1; //> O vértice inicial não tem pai
+        q.push(start); //> Começa a busca a partir do vértice inicial
+
+        while (not q.empty()) { //> Enquanto houver vértices na fila
+            int u = q.front(); //> Obtém o vértice atual da frente da fila
+            q.pop();//> Remove o vértice atual da fila
+
+            for (int v = 0; v < m_vertices; ++v) { //> Para cada vértice v, verifica se é adjacente a u
+                if (m_matrix[u][v] == 0) continue; //> Ignora se não houver aresta entre u e v
+
+                if (not visited[v]) { //> Se v ainda não foi visitado, marca como visitado, define u como pai de v e adiciona v à fila
+                    visited[v] = 1;
+                    parent[v] = u;
+                    q.push(v);
+                } else if (parent[u] != v) { //> Se v já foi visitado e não é o pai de u, então encontramos um ciclo
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+template <typename T>
+Matriz<int> Graph<T>::kuskal(){
+    if (not m_weighted) { //> O algoritmo de Kruskal é aplicável apenas a grafos ponderados, então verifica se o grafo é ponderado
+        std::cerr << "Erro: O algoritmo de Kruskal só é aplicável a grafos ponderados.\n";
+        return Matriz<int>{};
+    }
+
+    if (is_targeted) { //> O algoritmo de Kruskal é aplicável apenas a grafos não direcionados, então verifica se o grafo é direcionado
+        std::cerr << "Erro: O algoritmo de Kruskal (MST) só é aplicável a grafos não direcionados.\n";
+        return Matriz<int>{};
+    }
+
+    //> Garante matriz de adjacência disponível
+    if (graphRep != rep::ADJACENCY_MATRIX) { to_matrix(); }
+    //
+    std::vector<std::tuple<int, int, int>> edges; //> (origem, destino, custo)
+    //> preenche o vetor de arestas a partir da matriz de adjacência, garantindo que cada aresta seja considerada apenas uma vez (i, j) e (j, i) são a mesma aresta em um grafo não direcionado
+    for (int i = 0; i < m_vertices; ++i) {
+        for (int j = i + 1; j < m_vertices; ++j) {
+            if (m_matrix[i][j] != 0) {
+                edges.emplace_back(i, j, m_matrix[i][j]);
+            }
+        }
+    }
+    //> Ordena as arestas pelo custo em ordem crescente
+    std::sort(edges.begin(), edges.end(), [](const auto& a, const auto& b) {
+        return std::get<2>(a) < std::get<2>(b);
+    });
+    //> Cria um novo grafo para armazenar a árvore geradora mínima (MST)
+    Graph<T> mst(m_vertices, false, true);
+    mst.m_vertex_index = m_vertex_index; //> Garante que os rótulos dos vértices sejam os mesmos no MST
+
+    int i {0}; //> Contador de arestas adicionadas ao MST
+    for (const auto& [u, v, cost] : edges) {
+        mst.m_matrix[u][v] = cost; 
+        mst.m_matrix[v][u] = cost; 
+
+        if (mst.has_cycle()) { //> Verifica se a adição da nova aresta criou um ciclo no MST
+            mst.m_matrix[u][v] = 0;
+            mst.m_matrix[v][u] = 0;
+            continue;
+        }
+        //> Se não criou ciclo, mantém a aresta no MST e incrementa o contador
+        i++;
+        if (i == m_vertices - 1) break; //> O MST de um grafo com n vértices tem exatamente n-1 arestas, então podemos parar quando atingirmos esse número
+    }
+
+    mst.print(); //> Imprime a matriz de adjacência do MST resultante
+    return mst.m_matrix;
+}
+
 #endif

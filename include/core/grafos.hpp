@@ -35,6 +35,13 @@ enum class Representation { //> Enum que guarda todas as possíveis representaç
       INCIDENCY_MATRIX
 };
 
+  template<typename  T>
+      struct Edge { //> Estrutura para representar uma aresta com vértices de origem e destino e peso
+        T origin;
+        T destiny;
+        int cost = 0;
+      };
+
 /**
  * @brief Classe que representa um grafo
  * O grafo pode ser representado tanto por uma matriz de adjacências quanto por uma lista de adjacências quanto matriz de incidência. 
@@ -44,17 +51,20 @@ enum class Representation { //> Enum que guarda todas as possíveis representaç
 template <typename Type>
 class Graph{
 private:
-   std::vector<std::vector<int>> m_inc_matrix; //> Matriz de Incidências com -1/0/1 para representar o grafo
-   std::vector<std::vector<int>> m_matrix; //> Matriz de adjacências com -1/0/1 para representar o grafo
-   Lista<Type> m_list; //> Lista de adjacências para representar o grafo
+  Matriz<int> m_inc_matrix; //> Matriz de incidências (grafo: 1/1; dígrafo: 1/-1; 0 = sem incidência)
+  Matriz<int> m_matrix; //> Matriz de adjacências (0 = sem aresta; 1 = aresta sem custo; >=1 = custo quando ponderado)
+   Lista<Edge<Type>> m_list; //> Lista de adjacências para representar o grafo
    int m_vertices; //> Número de vértices no grafo
    int m_edges{0}; //> Número de arestas no grafo
    Representation graphRep{Representation::ADJACENCY_MATRIX}; //> Flag para indicar se o grafo está usando lista de adjacências, matriz de adjacências ou matriz de incidências
    bool is_targeted{false}; //> Flag para indicar se o grafo é direcionado ou não
+  bool m_weighted{false}; //> Flag: se true, arestas possuem custo (cost >= 1). Se false, custo é ignorado (cost = 0).
    std::unordered_map<Type, int> m_vertex_index; //> Mapa para associar vértices a índices na matriz de adjacências
 
+  std::vector<int> m_edge_costs; //> Custos por coluna (apenas quando em matriz de incidência)
+
    int get_vertex_index(Type vertex, bool create = true); //> Método privado para obter ou criar o índice de um vértice
-   int get_newest_vertex(int vertex_index); //> Método privado para pegar a aresta a menor distância de um vértice específico
+  int get_newest_vertex(int current); //> Método privado para pegar a aresta a menor distância de um vértice específico
    Type get_vertex_label(int index);        //> Método privado que retorna o vértice com base no índice recebido
    void dfs_rec(int index, std::vector<Type>& visit_order, std::vector<bool>& visited); //> Método privado que realiza a parte recursiva da função dfs
 
@@ -66,9 +76,12 @@ public:
      * @param vertices  representa o número de vértices do grafo.
      * @param targeted  flag que diz se o grafo é direcionado
      */
-   Graph(int vertices, bool targeted = false) : m_vertices(vertices), is_targeted(targeted) {
-      m_matrix.resize(vertices, std::vector<int>(vertices, 0)); //> Inicializa a matriz de adjacências com zeros
+    Graph(int vertices, bool targeted = false, bool weighted = false)
+      : m_vertices(vertices), is_targeted(targeted), m_weighted(weighted) {
+      m_matrix.resize(vertices, std::vector<int>(vertices, 0)); //> 0 = sem aresta
    }
+
+    bool is_weighted() const { return m_weighted; }
 
     /** * @brief Converte a representação do grafo para lista de adjacências.
      * Caso o grafo seja representado por matriz de adjacências, o método percorre a matriz e para cada vértice,
@@ -104,6 +117,13 @@ public:
      * @param destiny representa o vértice de destino da aresta.
      */
     void add(Type origin, Type destiny);
+
+    /**
+     * @brief Adiciona uma aresta com custo.
+     * @note Se o grafo não for ponderado (m_weighted=false), o custo é ignorado (cost=0).
+     * @note Se o grafo for ponderado, então cost deve ser >= 1.
+     */
+    void add(Type origin, Type destiny, int cost);
 
     /**
      * @brief  Remove um vértice e todas as suas arestas do grafo.
@@ -183,7 +203,10 @@ public:
     bool is_bipartite(); //> Verifica se o grafo é bipartido, ou seja, se os vértices do grafo podem ser divididos em dois conjuntos disjuntos onde cada aresta conecta um vértice de um conjunto a um vértice do outro conjunto
 
     std::string getRepresentation(); //> Retorna a representação do grafo (matriz de adj, lista de adj ou matriz de inc) em formato de string
-
+    
+    //segunda unidade
+      bool has_cycle(); //> Verifica se o grafo contém ciclos, ou seja, se existe um caminho que começa e termina no mesmo vértice sem repetir arestas
+      Matriz<int> kuskal(); //> Implementa Kruskal e retorna a matriz de pesos da MST
   };
 
 #include "grafos.tpp"

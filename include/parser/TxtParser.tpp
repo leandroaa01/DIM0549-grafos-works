@@ -5,6 +5,8 @@
 
 #include "TxtParser.hpp"
 
+#include <cctype>
+
 template <typename Type>
 Graph<Type> TxtParser<Type>::parse(const std::string& filePath, psr::GraphOption graphOption){
     if(filePath.empty()){           //> Caso seja passado uma string vazia
@@ -25,40 +27,133 @@ Graph<Type> TxtParser<Type>::parse(const std::string& filePath, psr::GraphOption
 
     int vertex = std::stoi(line); //> O primeiro argumento tem que ser um inteiro (quantidade de vertices)
 
-    bool isFirstLineAfterVertex{true}; //> Flag que diz se a leitura do parâmetro "direcionado" foi realizado.
+    bool directed_set{false};
+    bool weighted_set{false};
+    bool weighted{false};
+    int edges_parsed{0};
 
-    Graph<Type> graph(vertex, graphOption); //> Cria um grafo.
+    auto is_digraph = [&](psr::GraphOption opt) -> bool {
+        return opt == psr::GraphOption::DIGRAPH;
+    };
+
+    bool directed = is_digraph(graphOption);
+    Graph<Type> graph(vertex, directed, weighted); //> Cria um grafo.
+
+    auto parse_vertex_token = [&](const std::string& token) -> Type {
+        if constexpr (std::is_same_v<Type, char>) {
+            if (token.size() != 1) {
+                throw std::invalid_argument(
+                    "Error! Expected a single character vertex token, got: '" + token + "'"
+                );
+            }
+            return token[0];
+        } else if constexpr (std::is_same_v<Type, int>) {
+            //> 1) tenta número
+            try {
+                size_t pos = 0;
+                int value = std::stoi(token, &pos);
+                if (pos == token.size()) {
+                    return value;
+                }
+            } catch (const std::exception&) {
+                // continua
+            }
+
+            //> 2) tenta letra (A->1, B->2, ...)
+            if (token.size() == 1) {
+                unsigned char ch = static_cast<unsigned char>(token[0]);
+                if (std::isalpha(ch)) {
+                    char up = static_cast<char>(std::toupper(ch));
+                    return static_cast<int>(up - 'A' + 1);
+                }
+            }
+
+            throw std::invalid_argument(
+                "Error! Could not parse vertex token as int nor as letter (A->1...). Token: '" + token + "'"
+            );
+        } else {
+            static_assert(!sizeof(Type), "TxtParser: unsupported vertex Type");
+        }
+    };
 
     while(std::getline(ifs, line)){ //> Leitura do arquivo inteiro
 
         if(line.empty())continue;   //> Caso seja uma linha em branco, ignora
+        if(line[0] == '#')continue; //> Caso seja um comentário, ignora
 
         std::replace(line.begin(), line.end(), ',', ' '); //> Transforma vírgulas em espaços para facilitar leitura
 
         std::stringstream ss{line}; //> Stringstream para facilitar a leitura
-        std::pair<Type, Type> pair;     //> Par que representa a aresta que será lida
 
-        
-        if(ss >> pair.first >> pair.second){ //> Caso consiga ler dois seguidos, é uma aresta e ele lê como uma aresta
-            graph.add(pair.first, pair.second);    
-        }
-        else if(isFirstLineAfterVertex){    //> Se não conseguir ler e a flag for true, então tem um parâmetro faltando na segunda linha,
-                                            //> Quando possui apenas 1 parâmetro nela, é a flag que diz se o grafo é ou não direcionado
-            int i = std::stoi(line);
-            graphOption = (psr::GraphOption) std::stoi(line);
-            graph = Graph<Type>(vertex, graphOption);   //> Transforma o grafo com base na flag recebida
-        
+        std::string tok1, tok2;
+        if (!(ss >> tok1)) {
+            continue;
         }
 
-        
-        isFirstLineAfterVertex = false; //> A flag se torna falsa a partir do momento em que não é mais a segunda linha
+        //> Caso a linha tenha só 1 token, pode ser uma flag (0/1)
+        if (!(ss >> tok2)) {
+            int flag = -1;
+            try {
+                flag = std::stoi(tok1);
+            } catch (const std::exception&) {
+                throw std::invalid_argument(
+                    "Error! Could not parse a 0/1 flag nor an edge. Line: " + line
+                );
+            }
+            if (flag != 0 && flag != 1) {
+                throw std::invalid_argument(
+                    "Error! Flag lines must be 0 or 1. Line: " + line
+                );
+            }
+            if (edges_parsed > 0) {
+                throw std::invalid_argument(
+                    "Error! Flags (directed/weighted) must appear before edges. Line: " + line
+                );
+            }
+
+            if (!directed_set) {
+                graphOption = flag ? psr::GraphOption::DIGRAPH : psr::GraphOption::GRAPH;
+                directed = is_digraph(graphOption);
+                directed_set = true;
+                graph = Graph<Type>(vertex, directed, weighted);
+                continue;
+            }
+            if (!weighted_set) {
+                weighted = (flag == 1);
+                weighted_set = true;
+                graph = Graph<Type>(vertex, directed, weighted);
+                continue;
+            }
+
+            throw std::invalid_argument(
+                "Error! Unexpected extra flag line (already read directed and weighted flags). Line: " + line
+            );
+        }
+
+        //> Caso tenha 2+ tokens, é uma aresta (com custo opcional)
+        Type u = parse_vertex_token(tok1);
+        Type v = parse_vertex_token(tok2);
+
+        int cost = 0;
+        bool has_cost = static_cast<bool>(ss >> cost);
+
+        if (weighted) {
+            if (!has_cost) {
+                throw std::invalid_argument(
+                    "Error! Weighted graph expects edges in format: U,V,COST (COST>=0). Line: " + line
+                );
+            }
+            graph.add(u, v, cost);
+        } else {
+            graph.add(u, v);
+        }
+
+        edges_parsed++;
     }
     ifs.close(); //> Fecha o arquivo.
 
     return graph; //> Retorna o grafo gerado
 }
-
-
 
 
 bool verify_args(const int argc, const char* argv[], GraphType& graphType, psr::GraphOption& graphOption, std::string& filePath){

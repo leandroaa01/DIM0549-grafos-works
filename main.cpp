@@ -34,6 +34,7 @@ Selecione a opção que deseja utilizar:
     16 - Fazer busca em largura (BFS)
     17 - Classificar as arestas de um grafo direcionado usando DFS
     18 - Imprimir as aticulações do grafo
+    19 - Executar o algoritmo de Kuskal para encontrar a árvore geradora mínima do grafo
     0 - Sair
 )";
 
@@ -126,7 +127,11 @@ void interactive_menu(Graph<T>& graph)
     std::cout << "Articulações do grafo: \n";
     graph.find_articulations();
   };
-
+  actions[19] = [&]{
+    std::cout <<"Algoritmo de kuskal para caminho mínimo: \n";
+    auto k=  graph.kuskal();
+  };
+  
   while (true) {
     print_menu();
     std::cout << "Digite a opção desejada: ";
@@ -165,22 +170,26 @@ void run(int argc, char const* argv[])
       return;
     }
   }
-  if (gt == GraphType::CHAR) {
-    std::unique_ptr<psr::Parser<char>> parser = CreateParser::create<char>(psr::ParserType::TXT);
-    Graph<char> graph = parser->parse(filePath, go);
-
-    interactive_menu(graph);
-  } else {
-    std::unique_ptr<psr::Parser<int>> parser = CreateParser::create<int>(psr::ParserType::TXT);
-    Graph<int> graph = parser->parse(filePath, go);
-
-    interactive_menu(graph);
+  try {
+    if (gt == GraphType::CHAR) {
+      std::unique_ptr<psr::Parser<char>> parser = CreateParser::create<char>(psr::ParserType::TXT);
+      Graph<char> graph = parser->parse(filePath, go);
+      interactive_menu(graph);
+    } else {
+      std::unique_ptr<psr::Parser<int>> parser = CreateParser::create<int>(psr::ParserType::TXT);
+      Graph<int> graph = parser->parse(filePath, go);
+      interactive_menu(graph);
+    }
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << "\n";
+    return;
   }
 }
 
+
+
 int main(int argc, char const* argv[])
 {
-
   run(argc, argv);
   return 0;
 }
